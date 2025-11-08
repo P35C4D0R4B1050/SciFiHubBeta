@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using SciFiHub.Domain.Entities;
 using SciFiHub.Domain.Enums;
 using SciFiHub.Domain.Interfaces;
@@ -18,15 +19,18 @@ public class VentaService : IVentaService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly ILogger<VentaService> _logger;
+    private readonly IConfiguration _configuration;
 
     public VentaService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        ILogger<VentaService> logger)
+        ILogger<VentaService> logger,
+        IConfiguration configuration)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public async Task<Result<VentaDTO>> RegistrarVentaAsync(CrearVentaDTO crearVentaDto, CancellationToken cancellationToken = default)
@@ -78,7 +82,7 @@ public class VentaService : IVentaService
             string direccionCompleta = crearVentaDto.DireccionEnvioString ?? "";
 
             // Obtener conexión directa
-            var connectionString = _unitOfWork.Context.Database.GetConnectionString();
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
             
             using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync(cancellationToken);
@@ -443,7 +447,7 @@ public class VentaService : IVentaService
             }
 
             // Usar SQL directo para evitar problemas de tracking
-            var connectionString = _unitOfWork.Context.Database.GetConnectionString();
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
             
             using var connection = new SqlConnection(connectionString);
             await connection.OpenAsync(cancellationToken);

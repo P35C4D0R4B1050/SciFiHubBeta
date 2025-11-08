@@ -463,12 +463,20 @@ public class CarritoService : ICarritoService
     {
         try
         {
-            _logger.LogInformation("💳 Registrando venta con SQL directo...");
+            _logger.LogInformation("💳 Registrando venta...");
             
             // ✅ ID del vendedor predeterminado
-            var vendedorId = crearVentaDto.VendedorId ?? Guid.Parse("FBD28F76-BBF7-4BCA-7DF8-08DE1E0942A");
+            var vendedorId = crearVentaDto.VendedorId;
             
-            var ventaId = Guid.NewGuid();
+            if (!vendedorId.HasValue)
+            {
+                var vendedorPredeterminado = await _unitOfWork.Usuarios.Query()
+                    .Where(u => u.Username == "vendedor" && u.Rol == "Vendedor")
+                    .FirstOrDefaultAsync(cancellationToken);
+                
+                vendedorId = vendedorPredeterminado?.Id;
+            }
+            
             var numeroVenta = await GenerarNumeroVentaAsync(cancellationToken);
             var fechaVenta = DateTime.UtcNow;
             
@@ -480,84 +488,10 @@ public class CarritoService : ICarritoService
             
             _logger.LogInformation("📄 Número: {NumeroVenta}, Total: {Total}", numeroVenta, total);
             
-            // ✅ SQL DIRECTO - Insertar Venta
-            var insertVentaSQL = @"
-                INSERT INTO Ventas (
-                    Id, NumeroVenta, ClienteId, VendedorId, FechaVenta,
-                    Subtotal, Descuento, IGV, Total, EstadoVenta, MetodoPago,
-                    DireccionCalle, DireccionCiudad, DireccionDepartamento, DireccionPais,
-                    DireccionCodigoPostal, DireccionReferencia,
-                    NotasVenta, CreatedAt
-                ) VALUES (
-                    {0}, {1}, {2}, {3}, {4},
-                    {5}, {6}, {7}, {8}, {9}, {10},
-                    {11}, {12}, {13}, {14},
-                    {15}, {16},
-                    {17}, {18}
-                )";
-            
-            await _unitOfWork.Context.Database.ExecuteSqlRawAsync(insertVentaSQL,
-                ventaId,
-                numeroVenta,
-                crearVentaDto.ClienteId,
-                vendedorId,
-                fechaVenta,
-                subtotal,
-                descuento,
-                igv,
-                total,
-                "Pendiente",
-                crearVentaDto.MetodoPagoString,
-                crearVentaDto.DireccionEnvioString, // Calle
-                "", // Ciudad
-                "", // Departamento
-                "Perú", // Pais
-                null, // CodigoPostal
-                null, // Referencia
-                crearVentaDto.NotasVenta,
-                DateTime.UtcNow);
-            
-            _logger.LogInformation("✅ Venta insertada");
-            
-            // ✅ SQL DIRECTO - Insertar DetallesVenta y Actualizar Stock
-            foreach (var detalle in crearVentaDto.Detalles)
+            // Crear entidad Venta
+            var venta = new Venta
             {
-                var detalleId = Guid.NewGuid();
-                var subtotalDetalle = detalle.Cantidad * detalle.PrecioUnitario;
-                
-                // Insertar detalle
-                var insertDetalleSQL = @"
-                    INSERT INTO DetallesVenta (
-                        Id, VentaId, LibroId, Cantidad, PrecioUnitario, Descuento, Subtotal, CreatedAt
-                    ) VALUES (
-                        {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}
-                    )";
-                
-                await _unitOfWork.Context.Database.ExecuteSqlRawAsync(insertDetalleSQL,
-                    detalleId,
-                    ventaId,
-                    detalle.LibroId,
-                    detalle.Cantidad,
-                    detalle.PrecioUnitario,
-                    0,
-                    subtotalDetalle,
-                    DateTime.UtcNow);
-                
-                // ✅ ACTUALIZAR STOCK
-                var updateStockSQL = "UPDATE Libros SET Stock = Stock - {0} WHERE Id = {1}";
-                await _unitOfWork.Context.Database.ExecuteSqlRawAsync(updateStockSQL, detalle.Cantidad, detalle.LibroId);
-                
-                _logger.LogInformation("  ✅ Detalle + Stock: Libro={LibroId}, Cant={Cantidad}", detalle.LibroId, detalle.Cantidad);
-            }
-            
-            await _unitOfWork.CommitAsync(cancellationToken);
-            
-            _logger.LogInformation("✅ Venta registrada con stock actualizado");
-            
-            // Retornar DTO
-            var ventaDto = new VentaDTO
-            {
-                Id = ventaId,
+                Id = Guid.NewGuid(),
                 NumeroVenta = numeroVenta,
                 ClienteId = crearVentaDto.ClienteId,
                 VendedorId = vendedorId,
@@ -568,7 +502,62 @@ public class CarritoService : ICarritoService
                 Total = total,
                 EstadoVenta = EstadoVenta.Pendiente,
                 MetodoPago = Enum.TryParse<MetodoPago>(crearVentaDto.MetodoPagoString, true, out var mp) ? mp : MetodoPago.Efectivo,
+                DireccionCalle = crearVentaDto.DireccionEnvioString ?? "Sin dirección",
+                DireccionCiudad = "",
+                DireccionDepartamento = "",
+                DireccionPais = "Perú",
                 NotasVenta = crearVentaDto.NotasVenta,
+                CreatedAt = DateTime.UtcNow
+            };
+            
+            // Agregar detalles
+            foreach (var detalleDto in crearVentaDto.Detalles)
+            {
+                var detalle = new DetalleVenta
+                {
+                    Id = Guid.NewGuid(),
+                    VentaId = venta.Id,
+                    LibroId = detalleDto.LibroId,
+                    Cantidad = detalleDto.Cantidad,
+                    PrecioUnitario = detalleDto.PrecioUnitario,
+                    Descuento = 0,
+                    Subtotal = detalleDto.Cantidad * detalleDto.PrecioUnitario,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                venta.Detalles.Add(detalle);
+                
+                // ✅ ACTUALIZAR STOCK usando el repositorio
+                var libro = await _unitOfWork.Libros.GetByIdAsync(detalleDto.LibroId, cancellationToken);
+                if (libro != null)
+                {
+                    libro.Stock -= detalleDto.Cantidad;
+                    await _unitOfWork.Libros.UpdateAsync(libro, cancellationToken);
+                    _logger.LogInformation("  ✅ Stock actualizado: Libro={LibroId}, Cant={Cantidad}", detalleDto.LibroId, detalleDto.Cantidad);
+                }
+            }
+            
+            // Guardar venta
+            await _unitOfWork.Ventas.AddAsync(venta, cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
+            
+            _logger.LogInformation("✅ Venta registrada con stock actualizado");
+            
+            // Retornar DTO
+            var ventaDto = new VentaDTO
+            {
+                Id = venta.Id,
+                NumeroVenta = venta.NumeroVenta,
+                ClienteId = venta.ClienteId,
+                VendedorId = venta.VendedorId,
+                FechaVenta = venta.FechaVenta,
+                Subtotal = venta.Subtotal,
+                Descuento = venta.Descuento,
+                IGV = venta.IGV,
+                Total = venta.Total,
+                EstadoVenta = venta.EstadoVenta,
+                MetodoPago = venta.MetodoPago,
+                NotasVenta = venta.NotasVenta,
                 Detalles = new List<DetalleVentaMostrarDTO>()
             };
             
