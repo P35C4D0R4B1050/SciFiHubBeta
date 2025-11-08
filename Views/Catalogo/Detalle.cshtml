@@ -1,0 +1,222 @@
+@model SciFiHub.Web.DTOs.Libro.LibroDTO
+
+@{
+    ViewData["Title"] = Model.Titulo;
+}
+
+@* Solo mostrar breadcrumb para Admin/Vendedor *@
+@if (User.IsInRole("Administrador") || User.IsInRole("Vendedor"))
+{
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Inicio</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Catalogo" asp-action="Index">Catálogo</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Catalogo" asp-action="Categoria" asp-route-id="@Model.CategoriaId">@Model.CategoriaNombre</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Titulo</li>
+        </ol>
+    </nav>
+}
+
+<div class="row">
+    <!-- Imagen del libro -->
+    <div class="col-md-4 mb-4">
+        @if (!string.IsNullOrEmpty(Model.ImagenPortada))
+        {
+            <img src="@Model.ImagenPortada" class="img-fluid rounded shadow" alt="@Model.Titulo">
+        }
+        else
+        {
+            <div class="bg-light rounded shadow d-flex align-items-center justify-content-center" style="height: 500px;">
+                <i class="bi bi-book text-secondary" style="font-size: 8rem;"></i>
+            </div>
+        }
+    </div>
+    
+    <!-- Información del libro -->
+    <div class="col-md-8">
+        <!-- Título y autor -->
+        <div class="mb-3">
+            @if (Model.Destacado)
+            {
+                <span class="badge bg-warning text-dark me-2">
+                    <i class="bi bi-star-fill"></i> Destacado
+                </span>
+            }
+            <span class="badge bg-secondary">@Model.CategoriaNombre</span>
+        </div>
+        
+        <h1 class="display-5 fw-bold mb-2">@Model.Titulo</h1>
+        <h4 class="text-muted mb-3">
+            <i class="bi bi-person"></i> @Model.Autor
+        </h4>
+        
+        <!-- Precio y disponibilidad -->
+        <div class="card bg-light mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        @if (Model.TieneOferta)
+                        {
+                            <div class="mb-2">
+                                <span class="text-muted text-decoration-line-through fs-5">$@Model.Precio.ToString("N2")</span>
+                                <span class="badge bg-danger ms-2">-@Model.PorcentajeDescuento%</span>
+                            </div>
+                            <div class="text-danger fs-2 fw-bold">$@Model.PrecioFinal.ToString("N2")</div>
+                        }
+                        else
+                        {
+                            <div class="text-primary fs-2 fw-bold">$@Model.PrecioFinal.ToString("N2")</div>
+                        }
+                    </div>
+                    <div class="col-md-6 text-end">
+                        @if (Model.Disponible)
+                        {
+                            <h5><span class="badge bg-success"><i class="bi bi-check-circle"></i> Disponible</span></h5>
+                            <p class="text-muted mb-0">Stock: @Model.Stock unidades</p>
+                        }
+                        else
+                        {
+                            <h5><span class="badge bg-danger"><i class="bi bi-x-circle"></i> Agotado</span></h5>
+                        }
+                    </div>
+                </div>
+                
+                @if (Model.Disponible)
+                {
+                    <hr>
+                    @if (!User.IsInRole("Administrador") && !User.IsInRole("Vendedor"))
+                    {
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Cantidad:</label>
+                                    <input type="number" id="cantidad" class="form-control" value="1" min="1" max="@Model.Stock">
+                                </div>
+                                <div class="col-md-8 d-flex align-items-end">
+                                    <button type="button" class="btn btn-primary btn-lg w-100 btn-add-carrito-detalle" 
+                                            data-libro-id="@Model.Id" data-libro-titulo="@Model.Titulo">
+                                        <i class="bi bi-cart-plus"></i> Agregar al Carrito
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <a asp-controller="Auth" asp-action="Login" asp-route-returnUrl="@Context.Request.Path" 
+                               class="btn btn-outline-primary btn-lg w-100">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar sesión para comprar
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-0">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-info-circle fs-4 me-3"></i>
+                                <div class="flex-grow-1">
+                                    <h5 class="alert-heading mb-1">Vista de Administración</h5>
+                                    <p class="mb-2">Los administradores y vendedores no pueden agregar items al carrito.</p>
+                                    <a href="@Url.Action("Inventario", User.IsInRole("Administrador") ? "Admin" : "Vendedor")" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="bi bi-arrow-left"></i> Volver a Inventario
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        
+        <!-- Detalles del libro -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Detalles del Libro</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="30%">ISBN:</th>
+                        <td>@Model.ISBN</td>
+                    </tr>
+                    <tr>
+                        <th>Editorial:</th>
+                        <td>@Model.Editorial</td>
+                    </tr>
+                    <tr>
+                        <th>Año de Publicación:</th>
+                        <td>@Model.AñoPublicacion</td>
+                    </tr>
+                    <tr>
+                        <th>Páginas:</th>
+                        <td>@Model.Paginas</td>
+                    </tr>
+                    <tr>
+                        <th>Idioma:</th>
+                        <td>@Model.Idioma</td>
+                    </tr>
+                    <tr>
+                        <th>Categoría:</th>
+                        <td>
+                            <a asp-controller="Catalogo" asp-action="Categoria" asp-route-id="@Model.CategoriaId">
+                                @Model.CategoriaNombre
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sinopsis y Descripción -->
+<div class="row mt-4">
+    <div class="col-12">
+        @if (!string.IsNullOrEmpty(Model.Sinopsis))
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-book"></i> Sinopsis</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead">@Model.Sinopsis</p>
+                </div>
+            </div>
+        }
+        
+        @if (!string.IsNullOrEmpty(Model.Descripcion))
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-text"></i> Descripción</h5>
+                </div>
+                <div class="card-body">
+                    <p>@Model.Descripcion</p>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnAgregar = document.querySelector('.btn-add-carrito-detalle');
+            if (btnAgregar) {
+                btnAgregar.addEventListener('click', function() {
+                    const libroId = this.getAttribute('data-libro-id');
+                    const cantidad = parseInt(document.getElementById('cantidad').value) || 1;
+                    
+                    // Llamar a la función global del carrito
+                    if (typeof agregarAlCarrito === 'function') {
+                        agregarAlCarrito(libroId, cantidad);
+                    } else {
+                        console.error('? Función agregarAlCarrito no está disponible');
+                        alert('Error: El sistema de carrito no está cargado correctamente.');
+                    }
+                });
+            }
+        });
+    </script>
+}

@@ -1,0 +1,1059 @@
+@model IEnumerable<SciFiHub.Web.DTOs.Usuario.UsuarioDTO>
+
+@{
+    ViewData["Title"] = "Gestión de Usuarios";
+}
+
+<style>
+    /* Roles con colores */
+    .badge-administrador { background-color: #dc3545 !important; }
+    .badge-vendedor { background-color: #007bff !important; }
+    .badge-cliente { background-color: #28a745 !important; }
+    
+    /* Estados */
+    .badge-activo { background-color: #28a745 !important; }
+    .badge-inactivo { background-color: #6c757d !important; }
+    .badge-suspendido { background-color: #ffc107 !important; color: #000 !important; }
+    
+    /* Autocomplete */
+    #searchResultsUsuarios {
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    /* Number picker */
+    .number-picker {
+        display: flex;
+        align-items: center;
+        width: 140px;
+    }
+    .number-picker button {
+        width: 35px;
+        height: 35px;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        font-weight: bold;
+        transition: all 0.2s;
+    }
+    .number-picker button:hover {
+        background: #e9ecef;
+    }
+    .number-picker input {
+        width: 70px;
+        text-align: center;
+        border-left: none;
+        border-right: none;
+        height: 35px;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-people text-danger"></i> Gestión de Usuarios</h2>
+            <p class="text-muted">Administración completa de usuarios del sistema</p>
+        </div>
+    </div>
+
+    <!-- Barra de búsqueda y acciones -->
+    <div class="row mb-4">
+        <div class="col-md-9">
+            <div class="position-relative">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search text-danger"></i>
+                    </span>
+                    <input type="text" 
+                           id="searchUsuarios" 
+                           class="form-control border-start-0" 
+                           placeholder="Buscar por nombre, email, username, rol...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusquedaUsuarios()">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+                <div id="searchResultsUsuarios" 
+                     class="list-group position-absolute w-100 mt-1" 
+                     style="z-index: 1000; display: none;"></div>
+            </div>
+        </div>
+        <div class="col-md-3 text-end">
+            <button type="button" 
+                    class="btn btn-danger btn-lg w-100" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalUsuario">
+                <i class="bi bi-person-plus me-2"></i>Crear Usuario
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros rápidos -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-primary" onclick="filtrarPorRol('todos')">
+                    Todos (@(Model?.Count() ?? 0))
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="filtrarPorRol('administrador')">
+                    <i class="bi bi-shield-lock"></i> Administradores
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="filtrarPorRol('vendedor')">
+                    <i class="bi bi-person-badge"></i> Vendedores
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="filtrarPorRol('cliente')">
+                    <i class="bi bi-person"></i> Clientes
+                </button>
+            </div>
+            
+            <div class="btn-group btn-group-sm ms-3" role="group">
+                <button type="button" class="btn btn-outline-success" onclick="filtrarPorEstado('activo')">
+                    <i class="bi bi-check-circle"></i> Activos
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="filtrarPorEstado('inactivo')">
+                    <i class="bi bi-x-circle"></i> Inactivos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Administradores</h6>
+                    <h3 class="mb-0">@Model?.Count(u => u.Rol == SciFiHub.Domain.Enums.RolUsuario.Administrador)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Vendedores</h6>
+                    <h3 class="mb-0">@Model?.Count(u => u.Rol == SciFiHub.Domain.Enums.RolUsuario.Vendedor)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Clientes</h6>
+                    <h3 class="mb-0">@Model?.Count(u => u.Rol == SciFiHub.Domain.Enums.RolUsuario.Cliente)</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="card-title">Usuarios Activos</h6>
+                    <h3 class="mb-0">@Model?.Count(u => u.Estado == SciFiHub.Domain.Enums.EstadoUsuario.Activo)</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toggle entre usuarios activos y eliminados -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="toggleEliminados" 
+                       onchange="toggleVistaEliminados()">
+                <label class="form-check-label fw-bold" for="toggleEliminados">
+                    <i class="bi bi-trash"></i> Ver usuarios eliminados (Papelera)
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de usuarios activos -->
+    <div id="tablaUsuariosActivos" style="display: block;">
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="tablaUsuarios">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Nombre Completo</th>
+                                <th>Email</th>
+                                <th>Username</th>
+                                <th>Teléfono</th>
+                                <th class="text-center">Rol</th>
+                                <th class="text-center">Estado</th>
+                                <th>Fecha Registro</th>
+                                <th class="text-center pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                @foreach (var usuario in Model)
+                                {
+                                    var rolClass = usuario.Rol switch {
+                                        SciFiHub.Domain.Enums.RolUsuario.Administrador => "badge-administrador",
+                                        SciFiHub.Domain.Enums.RolUsuario.Vendedor => "badge-vendedor",
+                                        _ => "badge-cliente"
+                                    };
+                                    
+                                    var estadoClass = usuario.Estado switch {
+                                        SciFiHub.Domain.Enums.EstadoUsuario.Activo => "badge-activo",
+                                        SciFiHub.Domain.Enums.EstadoUsuario.Inactivo => "badge-inactivo",
+                                        _ => "badge-suspendido"
+                                    };
+
+                                    <tr data-usuario-id="@usuario.Id" 
+                                        data-rol="@usuario.Rol.ToString().ToLower()" 
+                                        data-estado="@usuario.Estado.ToString().ToLower()">
+                                        <td class="ps-4">
+                                            <div>
+                                                <strong>@usuario.NombreCompleto</strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <i class="bi bi-envelope text-muted me-1"></i>
+                                            <small>@usuario.Email</small>
+                                        </td>
+                                        <td>
+                                            <i class="bi bi-person-circle text-muted me-1"></i>
+                                            <code>@usuario.Username</code>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(usuario.Telefono))
+                                            {
+                                                <i class="bi bi-telephone text-muted me-1"></i>
+                                                <span>@usuario.Telefono</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge @rolClass px-3 py-2">
+                                                @usuario.Rol.ToString()
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge @estadoClass px-3 py-2">
+                                                @usuario.Estado.ToString()
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                @usuario.FechaRegistro.ToString("dd/MM/yyyy")
+                                            </small>
+                                        </td>
+                                        <td class="text-center pe-4">
+                                            <div class="btn-group" role="group">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-info" 
+                                                        onclick="verDetalleUsuario('@usuario.Id')"
+                                                        title="Ver detalle">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-warning" 
+                                                        onclick="editarUsuario('@usuario.Id')"
+                                                        title="Editar">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-@(usuario.Estado == SciFiHub.Domain.Enums.EstadoUsuario.Activo ? "secondary" : "success")" 
+                                                        onclick="cambiarEstadoUsuario('@usuario.Id', '@usuario.NombreCompleto', @((int)usuario.Estado))"
+                                                        title="@(usuario.Estado == SciFiHub.Domain.Enums.EstadoUsuario.Activo ? "Desactivar" : "Activar")">
+                                                    <i class="bi bi-@(usuario.Estado == SciFiHub.Domain.Enums.EstadoUsuario.Activo ? "toggle-on" : "toggle-off")"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger" 
+                                                        onclick="eliminarUsuario('@usuario.Id', '@usuario.NombreCompleto')"
+                                                        title="Eliminar">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary"></i>
+                                        <h5>No hay usuarios registrados</h5>
+                                        <p>Comienza creando tu primer usuario</p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de usuarios eliminados (nueva) -->
+    <div id="tablaUsuariosEliminados" style="display: none;">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="bi bi-trash me-2"></i>
+                    Usuarios Eliminados (Papelera)
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="tablaEliminados">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Nombre Completo</th>
+                                <th>Email</th>
+                                <th>Username</th>
+                                <th>Rol</th>
+                                <th>Fecha Eliminación</th>
+                                <th class="text-center pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyEliminados">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Crear/Editar Usuario -->
+    <div class="modal fade" id="modalUsuario" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-plus me-2" id="iconoModalUsuario"></i>
+                        <span id="tituloModalUsuario">Crear Nuevo Usuario</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formUsuario">
+                        <input type="hidden" id="usuarioId" name="Id">
+                        
+                        <!-- Información Personal -->
+                        <h6 class="text-danger mb-3"><i class="bi bi-person me-2"></i>Información Personal</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Nombre Completo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="NombreCompleto" id="nombreCompleto" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                    <input type="email" class="form-control" name="Email" id="email" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Teléfono</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+                                    <input type="tel" class="form-control" name="Telefono" id="telefono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Credenciales (solo al crear) -->
+                        <div id="seccionCredenciales">
+                            <h6 class="text-danger mb-3"><i class="bi bi-key me-2"></i>Credenciales de Acceso</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Username <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-person-circle"></i></span>
+                                        <input type="text" class="form-control" name="Username" id="username" required>
+                                    </div>
+                                    <div class="form-text">Nombre de usuario para iniciar sesión</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Contraseña <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                                        <input type="password" class="form-control" name="Password" id="password" required minlength="6">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Confirmar Contraseña <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                        <input type="password" class="form-control" name="ConfirmPassword" id="confirmPassword" required minlength="6">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmPassword')">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Las contraseñas no coinciden
+                                    </div>
+                                    <div class="valid-feedback">
+                                        ?? Las contraseñas coinciden
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rol y Estado -->
+                        <h6 class="text-danger mb-3"><i class="bi bi-shield-lock me-2"></i>Rol y Estado</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Rol <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-lg" name="Rol" id="rol" required>
+                                    <option value="">Seleccionar rol...</option>
+                                    <option value="Administrador">
+                                        ??? Administrador - Acceso total al sistema
+                                    </option>
+                                    <option value="Vendedor">
+                                        ???? Vendedor - Gestión de libros y ventas
+                                    </option>
+                                    <option value="Cliente">
+                                        ?? Cliente - Compra de libros
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Estado</label>
+                                <select class="form-select form-select-lg" name="Estado" id="estadoUsuario">
+                                    <option value="Activo">? Activo</option>
+                                    <option value="Inactivo">? Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="guardarUsuario()">
+                        <i class="bi bi-save me-2"></i>Guardar Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Ver Detalle -->
+    <div class="modal fade" id="modalDetalleUsuario" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-circle me-2"></i>Detalle del Usuario
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detalleUsuarioContent">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+@section Scripts {
+    <script>
+        let modoEdicion = false;
+
+        /**
+         * Extrae mensajes de error detallados de respuestas del servidor
+         */
+        function extraerMensajeError(data) {
+            // 1. Errores de validación por campo (ModelState)
+            if (data.errors) {
+                const errores = Object.entries(data.errors)
+                    .map(([campo, mensajes]) => {
+                        const msgs = Array.isArray(mensajes) ? mensajes.join(', ') : mensajes;
+                        return `• ${campo}: ${msgs}`;
+                    })
+                    .join('\n');
+                return `Errores de validación:\n${errores}`;
+            }
+            
+            // 2. ProblemDetails de ASP.NET
+            if (data.title) {
+                let mensaje = data.title;
+                if (data.detail) {
+                    mensaje += `\n${data.detail}`;
+                }
+                if (data.traceId) {
+                    mensaje += `\n\nTrace ID: ${data.traceId}`;
+                }
+                return mensaje;
+            }
+            
+            // 3. Mensaje personalizado del controller
+            if (data.error) {
+                return data.error;
+            }
+            
+            // 4. Fallback
+            return 'Error desconocido. Por favor, contacte al administrador.';
+        }
+
+        // Búsqueda con autocompletado
+        let searchTimeoutUsuarios;
+        document.getElementById('searchUsuarios').addEventListener('input', function(e) {
+            clearTimeout(searchTimeoutUsuarios);
+            const query = e.target.value.trim();
+            const resultsDiv = document.getElementById('searchResultsUsuarios');
+            
+            if (query.length < 2) {
+                resultsDiv.style.display = 'none';
+                mostrarTodosUsuarios();
+                return;
+            }
+            
+            searchTimeoutUsuarios = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/Busqueda/usuarios?query=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    
+                    if (data.items && data.items.length > 0) {
+                        resultsDiv.innerHTML = data.items.map(usuario => `
+                            <button type="button" class="list-group-item list-group-item-action" 
+                                    onclick="seleccionarUsuario('${usuario.id}')">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>${usuario.nombreCompleto}</strong><br>
+                                        <small class="text-muted">
+                                            ${usuario.email} | @@${usuario.username}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-${getRolColor(usuario.rol)}">${usuario.rol}</span><br>
+                                        <span class="badge bg-${getEstadoColorBadge(usuario.estado)}">${usuario.estado}</span>
+                                    </div>
+                                </div>
+                            </button>
+                        `).join('');
+                        resultsDiv.style.display = 'block';
+                    } else {
+                        resultsDiv.innerHTML = `
+                            <div class="list-group-item text-muted text-center py-3">
+                                <i class="bi bi-search"></i> No se encontraron usuarios
+                            </div>
+                        `;
+                        resultsDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error en búsqueda:', error);
+                }
+            }, 300);
+        });
+
+        function getRolColor(rol) {
+            const colores = {
+                'Administrador': 'danger',
+                'Vendedor': 'primary',
+                'Cliente': 'success'
+            };
+            return colores[rol] || 'secondary';
+        }
+
+        function getEstadoColorBadge(estado) {
+            const colores = {
+                'Activo': 'success',
+                'Inactivo': 'secondary',
+                'Suspendido': 'warning'
+            };
+            return colores[estado] || 'secondary';
+        }
+
+        function seleccionarUsuario(id) {
+            document.getElementById('searchResultsUsuarios').style.display = 'none';
+            document.querySelectorAll('#tablaUsuarios tbody tr').forEach(row => {
+                row.style.display = row.dataset.usuarioId === id ? '' : 'none';
+            });
+        }
+
+        function limpiarBusquedaUsuarios() {
+            document.getElementById('searchUsuarios').value = '';
+            document.getElementById('searchResultsUsuarios').style.display = 'none';
+            mostrarTodosUsuarios();
+        }
+
+        function mostrarTodosUsuarios() {
+            document.querySelectorAll('#tablaUsuarios tbody tr').forEach(row => {
+                row.style.display = '';
+            });
+        }
+
+        // Filtros
+        function filtrarPorRol(rol) {
+            document.querySelectorAll('#tablaUsuarios tbody tr').forEach(row => {
+                const rowRol = row.dataset.rol;
+                const mostrar = rol === 'todos' || rowRol === rol;
+                row.style.display = mostrar ? '' : 'none';
+            });
+        }
+
+        function filtrarPorEstado(estado) {
+            document.querySelectorAll('#tablaUsuarios tbody tr').forEach(row => {
+                const rowEstado = row.dataset.estado;
+                const mostrar = rowEstado === estado;
+                row.style.display = mostrar ? '' : 'none';
+            });
+        }
+
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = event.target.closest('button').querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+        
+        // Validación en tiempo real de contraseñas
+        document.addEventListener('DOMContentLoaded', function() {
+            const password = document.getElementById('password');
+            const confirmPassword = document.getElementById('confirmPassword');
+            
+            function validatePasswords() {
+                if (!password || !confirmPassword) return;
+                
+                const pass1 = password.value;
+                const pass2 = confirmPassword.value;
+                
+                if (pass2.length === 0) {
+                    confirmPassword.classList.remove('is-invalid', 'is-valid');
+                    return;
+                }
+                
+                if (pass1 === pass2) {
+                    confirmPassword.classList.remove('is-invalid');
+                    confirmPassword.classList.add('is-valid');
+                } else {
+                    confirmPassword.classList.remove('is-valid');
+                    confirmPassword.classList.add('is-invalid');
+                }
+            }
+            
+            if (password) password.addEventListener('input', validatePasswords);
+            if (confirmPassword) confirmPassword.addEventListener('input', validatePasswords);
+        });
+
+        // Ver detalle
+        async function verDetalleUsuario(id) {
+            try {
+                const response = await fetch(`/api/Usuarios/${id}`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    alert('Error al cargar el usuario');
+                    return;
+                }
+                
+                const usuario = data.data;
+                const rolColor = getRolColor(usuario.rolNombre);
+                const estadoColor = getEstadoColorBadge(usuario.estadoNombre);
+                
+                document.getElementById('detalleUsuarioContent').innerHTML = `
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <h4>${usuario.nombreCompleto}</h4>
+                            <span class="badge bg-${rolColor} me-2">${usuario.rolNombre}</span>
+                            <span class="badge bg-${estadoColor}">${usuario.estadoNombre}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted">Email</label>
+                            <p><i class="bi bi-envelope me-2"></i>${usuario.email}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted">Username</label>
+                            <p><i class="bi bi-person-circle me-2"></i>${usuario.username}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted">Teléfono</label>
+                            <p><i class="bi bi-telephone me-2"></i>${usuario.telefono || 'No registrado'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted">Fecha de Registro</label>
+                            <p><i class="bi bi-calendar me-2"></i>${new Date(usuario.fechaRegistro).toLocaleDateString('es-PE')}</p>
+                        </div>
+                    </div>
+                `;
+                
+                new bootstrap.Modal(document.getElementById('modalDetalleUsuario')).show();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar el detalle del usuario');
+            }
+        }
+
+        // Editar usuario
+        async function editarUsuario(id) {
+            try {
+                const response = await fetch(`/api/Usuarios/${id}`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    alert('Error al cargar el usuario');
+                    return;
+                }
+                
+                const usuario = data.data;
+                modoEdicion = true;
+                
+                // Cambiar título
+                document.getElementById('tituloModalUsuario').textContent = 'Editar Usuario';
+                document.getElementById('iconoModalUsuario').className = 'bi bi-pencil-square me-2';
+                
+                // Ocultar campos de contraseña en edición
+                document.getElementById('seccionCredenciales').style.display = 'none';
+                document.getElementById('password').required = false;
+                document.getElementById('confirmPassword').required = false;
+                document.getElementById('username').required = false;
+                
+                // Rellenar formulario
+                document.getElementById('usuarioId').value = usuario.id;
+                document.getElementById('nombreCompleto').value = usuario.nombreCompleto;
+                document.getElementById('email').value = usuario.email;
+                document.getElementById('telefono').value = usuario.telefono || '';
+                document.getElementById('rol').value = usuario.rolNombre; // Usar rolNombre que es string
+                document.getElementById('rol').disabled = false; // Habilitar select de rol
+                document.getElementById('estadoUsuario').value = usuario.estadoNombre; // Usar estadoNombre que es string
+                
+                // Mostrar modal
+                new bootstrap.Modal(document.getElementById('modalUsuario')).show();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar el usuario');
+            }
+        }
+
+        // Cambiar estado
+        async function cambiarEstadoUsuario(id, nombre, estadoActual) {
+            const nuevoEstado = estadoActual === 0 ? 1 : 0; // Toggle entre Activo (0) e Inactivo (1)
+            const accion = nuevoEstado === 0 ? 'activar' : 'desactivar';
+            
+            if (!confirm(`¿Desea ${accion} al usuario "${nombre}"?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/Usuarios/${id}/estado`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: nuevoEstado })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`? Usuario ${accion === 'activar' ? 'activado' : 'desactivado'} exitosamente`);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cambiar el estado del usuario');
+            }
+        }
+
+        // Eliminar usuario
+        async function eliminarUsuario(id, nombre) {
+            if (!confirm(`¿Está seguro de eliminar al usuario?\n\n"${nombre}"\n\nEsta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/Usuarios/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                console.log('Respuesta de eliminación:', data); // Debug
+                
+                if (response.ok && data.success) {
+                    alert('? Usuario eliminado exitosamente');
+                    window.location.reload();
+                } else {
+                    const errorMsg = data.error || data.message || 'Error desconocido al eliminar el usuario';
+                    console.error('Error del servidor:', data);
+                    alert('? Error: ' + errorMsg);
+                }
+            } catch (error) {
+                console.error('Error de red o parsing:', error);
+                alert('? Error de conexión: ' + error.message);
+            }
+        }
+
+        // Guardar usuario
+        async function guardarUsuario() {
+            const form = document.getElementById('formUsuario');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            // Validar contraseñas si está creando
+            if (!modoEdicion) {
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                if (password !== confirmPassword) {
+                    alert('? Las contraseñas no coinciden');
+                    document.getElementById('confirmPassword').classList.add('is-invalid');
+                    return;
+                } else {
+                    document.getElementById('confirmPassword').classList.remove('is-invalid');
+                }
+            }
+            
+            const formData = new FormData(form);
+            const usuarioId = document.getElementById('usuarioId').value;
+            const esEdicion = usuarioId !== '';
+            
+            let usuario;
+            if (esEdicion) {
+                usuario = {
+                    id: usuarioId,
+                    nombreCompleto: formData.get('NombreCompleto'),
+                    email: formData.get('Email'),
+                    telefono: formData.get('Telefono') || null,
+                    rol: formData.get('Rol'), // String: "Administrador", "Vendedor", "Cliente"
+                    estado: formData.get('Estado') // String: "Activo", "Inactivo"
+                };
+            } else {
+                usuario = {
+                    nombreCompleto: formData.get('NombreCompleto'),
+                    email: formData.get('Email'),
+                    username: formData.get('Username'),
+                    password: formData.get('Password'),
+                    confirmPassword: formData.get('ConfirmPassword'),
+                    rol: formData.get('Rol'), // String: "Administrador", "Vendedor", "Cliente"
+                    telefono: formData.get('Telefono') || null
+                    // Estado NO se envía al crear (siempre es Activo por defecto)
+                };
+            }
+            
+            console.log('?? Enviando usuario:', usuario); // Debug
+            
+            try {
+                const url = esEdicion ? `/api/Usuarios/${usuarioId}` : '/api/Usuarios';
+                const method = esEdicion ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(usuario)
+                });
+                
+                const data = await response.json();
+                
+                console.log('?? Respuesta del servidor:', data); // Debug
+                console.log('?? Status code:', response.status); // Debug
+                
+                if (response.ok && data.success) {
+                    alert(`? Usuario ${esEdicion ? 'actualizado' : 'creado'} exitosamente`);
+                    window.location.reload();
+                } else {
+                    // Usar función mejorada para extraer errores
+                    const errorMsg = extraerMensajeError(data);
+                    console.error('? Error del servidor completo:', JSON.stringify(data, null, 2));
+                    alert('? Error al guardar usuario:\n\n' + errorMsg);
+                }
+            } catch (error) {
+                console.error('? Error de red o parsing:', error);
+                alert('? Error de conexión:\n\n' + error.message);
+            }
+        }
+
+        // Resetear modal
+        document.getElementById('modalUsuario').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('formUsuario').reset();
+            document.getElementById('usuarioId').value = '';
+            document.getElementById('tituloModalUsuario').textContent = 'Crear Nuevo Usuario';
+            document.getElementById('iconoModalUsuario').className = 'bi bi-person-plus me-2';
+            document.getElementById('seccionCredenciales').style.display = 'block';
+            document.getElementById('password').required = true;
+            document.getElementById('confirmPassword').required = true;
+            document.getElementById('username').required = true;
+            modoEdicion = false;
+        });
+
+        // Toggle para mostrar usuarios eliminados
+        function toggleVistaEliminados() {
+            const checkbox = document.getElementById('toggleEliminados');
+            const mostrarEliminados = checkbox.checked;
+            
+            document.querySelectorAll('#tablaUsuarios tbody tr').forEach(row => {
+                const rowEstado = row.dataset.estado;
+                const esEliminado = rowEstado === 'eliminado';
+                row.style.display = mostrarEliminados && esEliminado ? '' : 'none';
+            });
+        }
+
+        // Cerrar autocomplete al hacer click fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#searchUsuarios') && !e.target.closest('#searchResultsUsuarios')) {
+                document.getElementById('searchResultsUsuarios').style.display = 'none';
+            }
+        });
+        
+        // ========================================
+        // FUNCIONES PARA USUARIOS ELIMINADOS
+        // ========================================
+        
+        let vistaEliminados = false;
+
+        async function toggleVistaEliminados() {
+            vistaEliminados = document.getElementById('toggleEliminados').checked;
+            
+            if (vistaEliminados) {
+                document.getElementById('tablaUsuariosActivos').style.display = 'none';
+                document.getElementById('tablaUsuariosEliminados').style.display = 'block';
+                await cargarUsuariosEliminados();
+            } else {
+                document.getElementById('tablaUsuariosActivos').style.display = 'block';
+                document.getElementById('tablaUsuariosEliminados').style.display = 'none';
+            }
+        }
+
+        async function cargarUsuariosEliminados() {
+            try {
+                const response = await fetch('/api/Usuarios/eliminados');
+                const data = await response.json();
+                
+                const tbody = document.getElementById('tbodyEliminados');
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    tbody.innerHTML = data.data.map(usuario => {
+                        const rolColor = getRolColor(usuario.rolNombre);
+                        
+                        return `
+                            <tr>
+                                <td class="ps-4">
+                                    <strong>${usuario.nombreCompleto}</strong>
+                                </td>
+                                <td>
+                                    <i class="bi bi-envelope text-muted me-1"></i>
+                                    <small>${usuario.email}</small>
+                                </td>
+                                <td>
+                                    <code>${usuario.username}</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-${rolColor}">${usuario.rolNombre}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        ${new Date(usuario.updatedAt || usuario.createdAt).toLocaleString('es-PE')}
+                                    </small>
+                                </td>
+                                <td class="text-center pe-4">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-success" 
+                                                onclick="restaurarUsuario('${usuario.id}', '${usuario.nombreCompleto}')"
+                                                title="Restaurar">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger" 
+                                                onclick="eliminarDefinitivo('${usuario.id}', '${usuario.nombreCompleto}')"
+                                                title="Eliminar definitivamente">
+                                            <i class="bi bi-trash-fill"></i> Eliminar Definitivo
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <h5>No hay usuarios en la papelera</h5>
+                                <p>Los usuarios eliminados aparecerán aquí</p>
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error al cargar usuarios eliminados:', error);
+                alert('? Error al cargar usuarios eliminados');
+            }
+        }
+
+        async function restaurarUsuario(id, nombre) {
+            if (!confirm(`¿Desea restaurar al usuario "${nombre}"?\n\nEl usuario volverá a estar activo en el sistema.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/Usuarios/${id}/restaurar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    alert('? Usuario restaurado exitosamente');
+                    // Recargar la página completa para mostrar el usuario restaurado en la tabla principal
+                    window.location.reload();
+                } else {
+                    alert('? Error: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('? Error de conexión');
+            }
+        }
+
+        async function eliminarDefinitivo(id, nombre) {
+            if (!confirm(`?? ADVERTENCIA ??\n\n¿Está ABSOLUTAMENTE SEGURO de eliminar DEFINITIVAMENTE al usuario "${nombre}"?\n\nEsta acción NO SE PUEDE DESHACER.\nEl usuario será eliminado permanentemente de la base de datos.`)) {
+                return;
+            }
+            
+            // Segunda confirmación
+            const confirmacion = prompt(`Para confirmar, escriba el nombre completo del usuario:\n"${nombre}"`);
+            
+            if (confirmacion !== nombre) {
+                alert('? Confirmación incorrecta. Operación cancelada.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/Usuarios/${id}/definitivo`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    alert('? Usuario eliminado definitivamente de la base de datos');
+                    // Recargar solo la tabla de eliminados
+                    await cargarUsuariosEliminados();
+                } else {
+                    alert('? Error: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('? Error de conexión');
+            }
+        }
+    </script>
+}

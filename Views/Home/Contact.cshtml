@@ -1,0 +1,157 @@
+@{
+    ViewData["Title"] = "Contacto";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4"><i class="bi bi-envelope"></i> Contáctanos</h1>
+        <p class="lead">¿Tienes alguna pregunta? Estamos aquí para ayudarte.</p>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Envíanos un Mensaje</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="#" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre Completo *</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        <div class="invalid-feedback">
+                            Por favor ingresa tu nombre.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email *</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                        <div class="invalid-feedback">
+                            Por favor ingresa un email válido.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="telefono" class="form-label">Teléfono</label>
+                        <input type="tel" class="form-control" id="telefono" name="telefono">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="asunto" class="form-label">Asunto *</label>
+                        <select class="form-select" id="asunto" name="asunto" required>
+                            <option value="">-- Selecciona un asunto --</option>
+                            <option value="consulta">Consulta General</option>
+                            <option value="pedido">Consulta sobre Pedido</option>
+                            <option value="catalogo">Sugerencia de Libro</option>
+                            <option value="problema">Problema Técnico</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            Por favor selecciona un asunto.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mensaje" class="form-label">Mensaje *</label>
+                        <textarea class="form-control" id="mensaje" name="mensaje" rows="5" required></textarea>
+                        <div class="invalid-feedback">
+                            Por favor ingresa tu mensaje.
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Nota:</strong> Responderemos a tu consulta en un plazo de 24-48 horas hábiles.
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send"></i> Enviar Mensaje
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Información de Contacto</h5>
+            </div>
+            <div class="card-body">
+                <h6>Dirección:</h6>
+                <p>
+                    Av. Ciencia Ficción 123<br>
+                    Distrito Futuro, Lima<br>
+                    Perú
+                </p>
+
+                <h6>Email:</h6>
+                <p>
+                    <a href="mailto:info@scifihub.com">info@scifihub.com</a><br>
+                    <a href="mailto:soporte@scifihub.com">soporte@scifihub.com</a>
+                </p>
+
+                <h6>Teléfono:</h6>
+                <p>
+                    <i class="bi bi-telephone"></i> +1 234 567 8900<br>
+                    <i class="bi bi-whatsapp"></i> +1 234 567 8901
+                </p>
+
+                <h6>Horario de Atención:</h6>
+                <p>
+                    <strong>Lunes a Viernes:</strong> 9:00 - 18:00<br>
+                    <strong>Sábado:</strong> 10:00 - 14:00<br>
+                    <strong>Domingo:</strong> Cerrado
+                </p>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Redes Sociales</h5>
+            </div>
+            <div class="card-body">
+                <p>También puedes contactarnos a través de nuestras redes sociales:</p>
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="bi bi-facebook"></i> Facebook
+                    </a>
+                    <a href="#" class="btn btn-outline-info">
+                        <i class="bi bi-twitter"></i> Twitter
+                    </a>
+                    <a href="#" class="btn btn-outline-danger">
+                        <i class="bi bi-instagram"></i> Instagram
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Validación de formularios Bootstrap
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        } else {
+                            event.preventDefault()
+                            alert('Formulario de contacto enviado (funcionalidad pendiente de implementar)')
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    </script>
+}

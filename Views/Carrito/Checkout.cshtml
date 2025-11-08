@@ -1,0 +1,482 @@
+@model SciFiHub.Web.DTOs.Carrito.CheckoutDTO
+
+@{
+    ViewData["Title"] = "Finalizar Compra";
+    var carrito = ViewBag.Carrito as SciFiHub.Web.DTOs.Carrito.CarritoDTO;
+}
+
+<div class="row">
+    <div class="col-12">
+        <h2><i class="bi bi-credit-card"></i> Finalizar Compra</h2>
+        <hr>
+    </div>
+</div>
+
+<form asp-action="ProcesarCheckout" method="post" id="form-checkout">
+    <!-- ? Campo oculto para cantidades temporales del JavaScript -->
+    <input type="hidden" name="cantidadesTemporales" id="cantidadesTemporales" value="">
+    
+    <!-- ? Campo oculto para dirección en formato JSON -->
+    <input type="hidden" name="DireccionEnvioJson" id="direccionCompleta" value="">
+    
+    <div class="row">
+        <!-- Información de envío y pago -->
+        <div class="col-lg-8">
+            <!-- Información de contacto -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-circle"></i> Información de Contacto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Cliente:</strong> @User.Identity?.Name<br>
+                        <strong>Email:</strong> @User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dirección de envío con listas en cascada -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Dirección de Envío</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="departamento" class="form-label">Departamento/Región *</label>
+                            <select id="departamento" class="form-select" required>
+                                <option value="">-- Selecciona --</option>
+                            </select>
+                            <div class="invalid-feedback">Por favor selecciona un departamento</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="provincia" class="form-label">Provincia *</label>
+                            <select id="provincia" class="form-select" required disabled>
+                                <option value="">-- Selecciona departamento primero --</option>
+                            </select>
+                            <div class="invalid-feedback">Por favor selecciona una provincia</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="distrito" class="form-label">Distrito *</label>
+                            <select id="distrito" class="form-select" required disabled>
+                                <option value="">-- Selecciona provincia primero --</option>
+                            </select>
+                            <div class="invalid-feedback">Por favor selecciona un distrito</div>
+                        </div>
+                        
+                        <div class="col-md-8 mb-3">
+                            <label for="direccionExacta" class="form-label">Dirección Exacta (Calle, Av., Jr.) *</label>
+                            <input type="text" id="direccionExacta" class="form-control" 
+                                   placeholder="Ej: Av. 28 de Julio 456, Dpto 301" required>
+                            <div class="invalid-feedback">Por favor ingresa la dirección exacta</div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="codigoPostal" class="form-label">Código Postal</label>
+                            <input type="text" id="codigoPostal" class="form-control" 
+                                   placeholder="Ej: 05000" maxlength="10">
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <label for="referencia" class="form-label">Referencia</label>
+                            <input type="text" id="referencia" class="form-control" 
+                                   placeholder="Ej: Cerca al mercado central, casa de color blanco" maxlength="200">
+                        </div>
+                        
+                        <!-- Campo oculto que almacenará el JSON con toda la dirección -->
+                        <input type="hidden" asp-for="DireccionEnvio" id="direccionCompleta">
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="guardarDireccion">
+                        <label class="form-check-label" for="guardarDireccion">
+                            Guardar esta dirección para futuras compras
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Método de pago -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-wallet2"></i> Método de Pago</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="MetodoPago" class="form-label">Selecciona tu método de pago *</label>
+                        <select asp-for="MetodoPago" class="form-select" id="MetodoPago" required>
+                            <option value="">-- Selecciona --</option>
+                            <option value="Efectivo">Efectivo (Pago contra entrega)</option>
+                            <option value="TarjetaCredito">Tarjeta de Crédito</option>
+                            <option value="TarjetaDebito">Tarjeta de Débito</option>
+                            <option value="Transferencia">Transferencia Bancaria</option>
+                            <option value="PayPal">PayPal</option>
+                        </select>
+                        <span asp-validation-for="MetodoPago" class="text-danger"></span>
+                    </div>
+
+                    <div id="info-pago-efectivo" class="alert alert-info" style="display:none;">
+                        <i class="bi bi-cash-stack"></i>
+                        <strong>Pago en Efectivo:</strong> El pago se realizará al momento de la entrega.
+                    </div>
+
+                    <div id="info-pago-tarjeta" style="display:none;">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Los datos de tu tarjeta son procesados de forma segura. No almacenamos información de tarjetas.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notas adicionales -->
+            <div class="card mb-3">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Notas Adicionales (Opcional)</h5>
+                </div>
+                <div class="card-body">
+                    <textarea asp-for="NotasVenta" class="form-control" rows="3" 
+                              placeholder="¿Alguna instrucción especial para tu pedido?"></textarea>
+                    <span asp-validation-for="NotasVenta" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen del pedido -->
+        <div class="col-lg-4">
+            <div class="card sticky-top" style="top: 80px;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Resumen del Pedido</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Items -->
+                    <h6 class="border-bottom pb-2">Items (@carrito?.CantidadItems)</h6>
+                    <div class="mb-3" style="max-height: 200px; overflow-y: auto;">
+                        @if (carrito != null)
+                        {
+                            @foreach (var item in carrito.Items)
+                            {
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="flex-grow-1">
+                                        <small><strong>@item.Titulo</strong></small><br>
+                                        <small class="text-muted">@item.Cantidad x S/@item.PrecioUnitario.ToString("N2")</small>
+                                    </div>
+                                    <div>
+                                        <small><strong>S/@item.Subtotal.ToString("N2")</strong></small>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <hr>
+
+                    <!-- Totales -->
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <strong>S/@carrito?.Subtotal.ToString("N2")</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>IGV (18%):</span>
+                        <strong>S/@carrito?.IGV.ToString("N2")</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="mb-0">Total a Pagar:</h5>
+                        <h5 class="mb-0 text-success">S/@carrito?.Total.ToString("N2")</h5>
+                    </div>
+
+                    <!-- Términos y condiciones -->
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="aceptarTerminos" required>
+                        <label class="form-check-label small" for="aceptarTerminos">
+                            Acepto los <a href="#" data-bs-toggle="modal" data-bs-target="#modalTerminos">términos y condiciones</a>
+                        </label>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" id="btn-confirmar-pedido">
+                            <i class="bi bi-check-circle"></i> Confirmar Pedido
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver al Carrito
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Modal de Términos y Condiciones -->
+<div class="modal fade" id="modalTerminos" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Términos y Condiciones</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Aceptación de términos</h6>
+                <p>Al realizar una compra en SciFiHub, aceptas estos términos y condiciones.</p>
+                
+                <h6>2. Procesamiento de pedidos</h6>
+                <p>Los pedidos se procesan en 24-48 horas hábiles.</p>
+                
+                <h6>3. Envíos</h6>
+                <p>Los envíos se realizan a través de correo certificado. El tiempo de entrega es de 3-5 días hábiles.</p>
+                
+                <h6>4. Devoluciones</h6>
+                <p>Aceptamos devoluciones dentro de los 30 días posteriores a la compra.</p>
+                
+                <h6>5. Privacidad</h6>
+                <p>Tus datos personales están protegidos según nuestra política de privacidad.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Variables globales
+        let departamentos = [];
+        let provincias = [];
+        let distritos = [];
+        let departamentoSeleccionado = null;
+        let provinciaSeleccionada = null;
+        let distritoSeleccionado = null;
+
+        $(document).ready(function() {
+            cargarDepartamentos();
+            setupEventHandlers();
+            setupFormValidation();
+        });
+
+        // Cargar departamentos al iniciar
+        async function cargarDepartamentos() {
+            try {
+                const response = await fetch('/api/Ubicaciones/departamentos');
+                const data = await response.json();
+                
+                if (data.success) {
+                    departamentos = data.data;
+                    llenarSelectDepartamentos();
+                }
+            } catch (error) {
+                console.error('Error al cargar departamentos:', error);
+            }
+        }
+
+        function llenarSelectDepartamentos() {
+            const select = $('#departamento');
+            select.empty().append('<option value="">-- Selecciona --</option>');
+            
+            departamentos.forEach(dept => {
+                select.append(`<option value="${dept.id}" data-nombre="${dept.nombre}">${dept.nombre}</option>`);
+            });
+        }
+
+        // Configurar event handlers
+        function setupEventHandlers() {
+            // Cuando cambia el departamento, cargar provincias
+            $('#departamento').change(async function() {
+                const deptId = $(this).val();
+                departamentoSeleccionado = $(this).find('option:selected').data('nombre') || null;
+                
+                // Resetear selects dependientes
+                $('#provincia').prop('disabled', true)
+                    .empty()
+                    .append('<option value="">-- Cargando... --</option>');
+                $('#distrito').prop('disabled', true)
+                    .empty()
+                    .append('<option value="">-- Selecciona provincia primero --</option>');
+                
+                provinciaSeleccionada = null;
+                distritoSeleccionado = null;
+                
+                if (deptId) {
+                    await cargarProvincias(deptId);
+                }
+            });
+
+            // Cuando cambia la provincia, cargar distritos
+            $('#provincia').change(async function() {
+                const provId = $(this).val();
+                provinciaSeleccionada = $(this).find('option:selected').data('nombre') || null;
+                
+                $('#distrito').prop('disabled', true)
+                    .empty()
+                    .append('<option value="">-- Cargando... --</option>');
+                
+                distritoSeleccionado = null;
+                
+                if (provId) {
+                    await cargarDistritos(provId);
+                }
+            });
+
+            // Cuando cambia el distrito
+            $('#distrito').change(function() {
+                distritoSeleccionado = $(this).find('option:selected').data('nombre') || null;
+            });
+
+            // Mostrar información según método de pago
+            $('#MetodoPago').change(function() {
+                const metodoPago = $(this).val();
+                
+                $('#info-pago-efectivo').hide();
+                $('#info-pago-tarjeta').hide();
+                
+                if (metodoPago === 'Efectivo') {
+                    $('#info-pago-efectivo').show();
+                } else if (metodoPago === 'TarjetaCredito' || metodoPago === 'TarjetaDebito') {
+                    $('#info-pago-tarjeta').show();
+                }
+            });
+        }
+
+        // Cargar provincias del departamento seleccionado
+        async function cargarProvincias(departamentoId) {
+            try {
+                const response = await fetch(`/api/Ubicaciones/departamentos/${departamentoId}/provincias`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    provincias = data.data;
+                    llenarSelectProvincias();
+                }
+            } catch (error) {
+                console.error('Error al cargar provincias:', error);
+                $('#provincia').empty().append('<option value="">Error al cargar</option>');
+            }
+        }
+
+        function llenarSelectProvincias() {
+            const select = $('#provincia');
+            select.empty().append('<option value="">-- Selecciona --</option>');
+            
+            provincias.forEach(prov => {
+                select.append(`<option value="${prov.id}" data-nombre="${prov.nombre}">${prov.nombre}</option>`);
+            });
+            
+            select.prop('disabled', false);
+        }
+
+        // Cargar distritos de la provincia seleccionada
+        async function cargarDistritos(provinciaId) {
+            try {
+                const response = await fetch(`/api/Ubicaciones/provincias/${provinciaId}/distritos`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    distritos = data.data;
+                    llenarSelectDistritos();
+                }
+            } catch (error) {
+                console.error('Error al cargar distritos:', error);
+                $('#distrito').empty().append('<option value="">Error al cargar</option>');
+            }
+        }
+
+        function llenarSelectDistritos() {
+            const select = $('#distrito');
+            select.empty().append('<option value="">-- Selecciona --</option>');
+            
+            distritos.forEach(dist => {
+                select.append(`<option value="${dist.id}" data-nombre="${dist.nombre}">${dist.nombre}</option>`);
+            });
+            
+            select.prop('disabled', false);
+        }
+
+        // Validar y construir JSON de dirección antes de enviar
+        function setupFormValidation() {
+            $('#form-checkout').submit(function(e) {
+                e.preventDefault(); // Prevenir envío inmediato
+                
+                console.log('?? SUBMIT interceptado');
+                
+                // Validar términos y condiciones
+                if (!$('#aceptarTerminos').is(':checked')) {
+                    alert('Debes aceptar los términos y condiciones');
+                    return false;
+                }
+
+                // Obtener valores de dirección
+                const departamento = departamentoSeleccionado || $('#departamento option:selected').text();
+                const provincia = provinciaSeleccionada || $('#provincia option:selected').text();
+                const distrito = distritoSeleccionado || $('#distrito option:selected').text();
+                const direccionExacta = $('#direccionExacta').val().trim();
+                const codigoPostal = $('#codigoPostal').val().trim();
+                const referencia = $('#referencia').val().trim();
+
+                console.log('?? Dirección:', { departamento, provincia, distrito, direccionExacta });
+
+                // Validar campos obligatorios
+                if (!departamento || departamento === '-- Selecciona --' ||
+                    !provincia || provincia === '-- Selecciona --' ||
+                    !distrito || distrito === '-- Selecciona --' ||
+                    !direccionExacta) {
+                    alert('Por favor completa todos los campos obligatorios de la dirección');
+                    return false;
+                }
+
+                // Construir objeto JSON con la dirección completa
+                // Nota: En el backend se usará DireccionEnvioDTO que espera Calle, Ciudad, Departamento, Pais
+                const direccionJSON = JSON.stringify({
+                    calle: direccionExacta,           // Mapea a DireccionEnvioDTO.Calle
+                    ciudad: distrito,                 // Mapea a DireccionEnvioDTO.Ciudad
+                    departamento: provincia,          // Mapea a DireccionEnvioDTO.Departamento
+                    pais: departamento,               // Mapea a DireccionEnvioDTO.Pais
+                    codigoPostal: codigoPostal,
+                    referencia: referencia
+                });
+
+                console.log('?? Dirección JSON:', direccionJSON);
+
+                // Asignar al campo oculto
+                $('#direccionCompleta').val(direccionJSON);
+
+                // ? RECUPERAR Y ENVIAR CANTIDADES TEMPORALES
+                const cantidadesTemporalesStr = sessionStorage.getItem('cambiosTemporales');
+                if (cantidadesTemporalesStr) {
+                    console.log('?? Cantidades temporales encontradas:', cantidadesTemporalesStr);
+                    $('#cantidadesTemporales').val(cantidadesTemporalesStr);
+                } else {
+                    console.log('?? Sin cantidades temporales');
+                    $('#cantidadesTemporales').val('{}');
+                }
+
+                // Confirmar pedido
+                if (!confirm('¿Confirmas tu pedido?')) {
+                    console.log('? Usuario canceló');
+                    return false;
+                }
+
+                console.log('? Confirmado, enviando formulario...');
+
+                // Deshabilitar botón para evitar doble click
+                $('#btn-confirmar-pedido')
+                    .prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm me-2"></span>Procesando...');
+
+                // Limpiar sessionStorage
+                sessionStorage.removeItem('cambiosTemporales');
+
+                // ? ENVIAR FORMULARIO REALMENTE
+                console.log('?? Enviando POST a servidor...');
+                this.submit(); // Esto envía el formulario al servidor
+                
+                return true;
+            });
+        }
+    </script>
+}

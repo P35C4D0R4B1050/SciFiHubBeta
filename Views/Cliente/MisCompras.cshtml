@@ -1,0 +1,87 @@
+@model IEnumerable<SciFiHub.Web.DTOs.Venta.VentaDTO>
+@{
+    ViewData["Title"] = "Mis Compras";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-bag-check"></i> Mis Compras</h2>
+        <a href="@Url.Action("Index", "Catalogo")" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Volver al Catálogo
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            Aún no has realizado ninguna compra.
+            <a href="@Url.Action("Index", "Catalogo")" class="alert-link">¡Explora nuestro catálogo!</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Número</th>
+                        <th>Fecha</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var venta in Model)
+                    {
+                        <tr>
+                            <td><strong>@venta.NumeroVenta</strong></td>
+                            <td>@venta.FechaVenta.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@venta.Detalles.Sum(d => d.Cantidad) items</td>
+                            <td><strong>S/ @venta.Total.ToString("N2")</strong></td>
+                            <td>
+                                @switch (venta.EstadoVenta)
+                                {
+                                    case SciFiHub.Domain.Enums.EstadoVenta.Pendiente:
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                        break;
+                                    case SciFiHub.Domain.Enums.EstadoVenta.Completada:
+                                        <span class="badge bg-success">Completada</span>
+                                        break;
+                                    case SciFiHub.Domain.Enums.EstadoVenta.Cancelada:
+                                        <span class="badge bg-danger">Cancelada</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-secondary">@venta.EstadoVenta</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                <a href="@Url.Action("DetalleCompra", new { id = venta.Id })" 
+                                   class="btn btn-sm btn-info" 
+                                   title="Ver Detalle">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Resumen de Compras</h5>
+                        <p><strong>Total de compras:</strong> @Model.Count()</p>
+                        <p><strong>Monto total invertido:</strong> S/ @Model.Sum(v => v.Total).ToString("N2")</p>
+                        <p><strong>Compras completadas:</strong> @Model.Count(v => v.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Completada)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

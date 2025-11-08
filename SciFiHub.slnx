@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../SciFiHub.Domain/SciFiHub.Domain.csproj" />
+  <Project Path="../SciFiHub.Infrastructure/SciFiHub.Infrastructure.csproj" />
+  <Project Path="SciFiHub.Web.csproj" />
+</Solution>

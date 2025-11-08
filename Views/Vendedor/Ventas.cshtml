@@ -1,0 +1,432 @@
+@model IEnumerable<SciFiHub.Web.DTOs.Venta.VentaDTO>
+
+@{
+    ViewData["Title"] = "Gestión de Ventas";
+}
+
+<style>
+    /* Estados de venta con colores */
+    .badge-pendiente { background-color: #ffc107 !important; color: #000 !important; }
+    .badge-procesando { background-color: #17a2b8 !important; }
+    .badge-completada { background-color: #28a745 !important; }
+    .badge-cancelada { background-color: #dc3545 !important; }
+    .badge-reembolsada { background-color: #6c757d !important; }
+    
+    /* Métodos de pago */
+    .badge-efectivo { background-color: #28a745 !important; }
+    .badge-tarjeta { background-color: #007bff !important; }
+    .badge-yape { background-color: #8b5cf6 !important; }
+    .badge-plin { background-color: #00bcd4 !important; }
+    .badge-transferencia { background-color: #ff9800 !important; }
+    
+    /* Autocomplete */
+    #searchResultsVentas {
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    /* Animaciones */
+    .table-row-hover {
+        transition: background-color 0.2s;
+    }
+    .table-row-hover:hover {
+        background-color: rgba(0,123,255,0.05);
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-receipt text-success"></i> Gestión de Ventas</h2>
+            <p class="text-muted">Registro y seguimiento de todas las ventas realizadas</p>
+        </div>
+    </div>
+
+    <!-- Barra de búsqueda y acciones -->
+    <div class="row mb-4">
+        <div class="col-md-9">
+            <div class="position-relative">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search text-success"></i>
+                    </span>
+                    <input type="text" 
+                           id="searchVentas" 
+                           class="form-control border-start-0" 
+                           placeholder="Buscar por N° venta, cliente, vendedor...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusquedaVentas()">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+                <div id="searchResultsVentas" 
+                     class="list-group position-absolute w-100 mt-1" 
+                     style="z-index: 1000; display: none;"></div>
+            </div>
+        </div>
+        <div class="col-md-3 text-end">
+            <a href="@Url.Action("CrearVenta", "Vendedor")" class="btn btn-success btn-lg w-100">
+                <i class="bi bi-plus-circle me-2"></i>Nueva Venta
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtros rápidos -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-primary" onclick="filtrarPorEstado('todos')">
+                    Todas (@(Model?.Count() ?? 0))
+                </button>
+                <button type="button" class="btn btn-outline-warning" onclick="filtrarPorEstado('pendiente')">
+                    <i class="bi bi-clock"></i> Pendientes
+                </button>
+                <button type="button" class="btn btn-outline-info" onclick="filtrarPorEstado('procesando')">
+                    <i class="bi bi-arrow-repeat"></i> Procesando
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="filtrarPorEstado('completada')">
+                    <i class="bi bi-check-circle"></i> Completadas
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="filtrarPorEstado('cancelada')">
+                    <i class="bi bi-x-circle"></i> Canceladas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Ventas Hoy</h6>
+                    <h3 class="mb-0">@{
+                        var hoy = DateTime.Now.Date;
+                        var ventasHoy = Model?.Where(v => v.FechaVenta.Date == hoy && 
+                                                          (v.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Pendiente || 
+                                                           v.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Completada)) ?? Enumerable.Empty<SciFiHub.Web.DTOs.Venta.VentaDTO>();
+                    }@ventasHoy.Count()</h3>
+                    <small class="text-white-50">Fecha: @hoy.ToString("dd/MM/yyyy")</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Monto Total Hoy</h6>
+                    <h3 class="mb-0">S/ @{
+                        var montoHoy = Model?.Where(v => v.FechaVenta.Date == hoy && 
+                                                         (v.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Pendiente || 
+                                                          v.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Completada))
+                                             .Sum(v => (decimal?)v.Total) ?? 0m;
+                    }@montoHoy.ToString("N2")</h3>
+                    <small class="text-white-50">@ventasHoy.Count() venta(s)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="card-title">Pendientes</h6>
+                    <h3 class="mb-0">@Model?.Count(v => v.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Pendiente)</h3>
+                    <small class="text-muted">Todas las fechas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Promedio Venta</h6>
+                    <h3 class="mb-0">S/ @{
+                        var ventasParaPromedio = Model?.Where(v => v.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Pendiente || 
+                                                                    v.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Completada);
+                        var promedio = ventasParaPromedio?.Any() == true ? ventasParaPromedio.Average(v => v.Total) : 0m;
+                    }@promedio.ToString("N2")</h3>
+                    <small class="text-white-50">@ventasParaPromedio?.Count() venta(s)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de ventas -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaVentas">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">N° Venta</th>
+                            <th>Fecha/Hora</th>
+                            <th>Cliente</th>
+                            <th>Vendedor</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-center">Método Pago</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var venta in Model)
+                            {
+                                var estadoClass = venta.EstadoVenta switch {
+                                    SciFiHub.Domain.Enums.EstadoVenta.Pendiente => "badge-pendiente",
+                                    SciFiHub.Domain.Enums.EstadoVenta.Procesando => "badge-procesando",
+                                    SciFiHub.Domain.Enums.EstadoVenta.Completada => "badge-completada",
+                                    SciFiHub.Domain.Enums.EstadoVenta.Cancelada => "badge-cancelada",
+                                    _ => "badge-reembolsada"
+                                };
+                                
+                                var pagoClass = venta.MetodoPago switch {
+                                    SciFiHub.Domain.Enums.MetodoPago.Efectivo => "badge-efectivo",
+                                    SciFiHub.Domain.Enums.MetodoPago.Yape => "badge-yape",
+                                    SciFiHub.Domain.Enums.MetodoPago.Plin => "badge-plin",
+                                    SciFiHub.Domain.Enums.MetodoPago.Transferencia => "badge-transferencia",
+                                    _ => "badge-tarjeta"
+                                };
+
+                                <tr class="table-row-hover" data-venta-id="@venta.Id" data-estado="@venta.EstadoVenta.ToString().ToLower()">
+                                    <td class="ps-4">
+                                        <strong class="text-primary">@venta.NumeroVenta</strong>
+                                    </td>
+                                    <td>
+                                        <div>@venta.FechaVenta.ToString("dd/MM/yyyy")</div>
+                                        <small class="text-muted">@venta.FechaVenta.ToString("HH:mm")</small>
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-person text-muted me-1"></i>
+                                        @venta.ClienteNombre
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-person-badge text-muted me-1"></i>
+                                        @(venta.VendedorNombre ?? "N/A")
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="text-success fs-5">S/ @venta.Total.ToString("N2")</strong>
+                                        <br>
+                                        <small class="text-muted">(@venta.CantidadItems items)</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @pagoClass px-3 py-2">
+                                            @venta.MetodoPago.ToString()
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @estadoClass px-3 py-2">
+                                            @venta.EstadoVenta.ToString()
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <div class="btn-group" role="group">
+                                            <a href="@Url.Action("DetalleVenta", "Vendedor", new { id = venta.Id })" 
+                                               class="btn btn-sm btn-outline-info"
+                                               title="Ver boleta">
+                                                <i class="bi bi-file-earmark-text"></i>
+                                            </a>
+                                            @if (venta.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Pendiente)
+                                            {
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-success" 
+                                                        onclick="completarVenta('@venta.Id', '@venta.NumeroVenta')"
+                                                        title="Completar">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            }
+                                            @if (User.IsInRole("Administrador") && 
+                                                 (venta.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Pendiente || 
+                                                  venta.EstadoVenta == SciFiHub.Domain.Enums.EstadoVenta.Procesando))
+                                            {
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-danger" 
+                                                        onclick="cancelarVenta('@venta.Id', '@venta.NumeroVenta')"
+                                                        title="Cancelar">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary"></i>
+                                    <h5>No hay ventas registradas</h5>
+                                    <p>Comienza creando tu primera venta</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Búsqueda con autocompletado
+        let searchTimeoutVentas;
+        document.getElementById('searchVentas').addEventListener('input', function(e) {
+            clearTimeout(searchTimeoutVentas);
+            const query = e.target.value.trim();
+            const resultsDiv = document.getElementById('searchResultsVentas');
+            
+            if (query.length < 2) {
+                resultsDiv.style.display = 'none';
+                mostrarTodasVentas();
+                return;
+            }
+            
+            searchTimeoutVentas = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/Busqueda/ventas?query=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    
+                    if (data.items && data.items.length > 0) {
+                        resultsDiv.innerHTML = data.items.map(venta => `
+                            <button type="button" class="list-group-item list-group-item-action" 
+                                    onclick="seleccionarVenta('${venta.id}')">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong class="text-primary">${venta.numeroVenta}</strong><br>
+                                        <small class="text-muted">
+                                            ${venta.fecha} | ${venta.cliente}
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong class="text-success">S/ ${parseFloat(venta.total).toFixed(2)}</strong><br>
+                                        <span class="badge bg-${getEstadoColor(venta.estado)}">${venta.estado}</span>
+                                    </div>
+                                </div>
+                            </button>
+                        `).join('');
+                        resultsDiv.style.display = 'block';
+                    } else {
+                        resultsDiv.innerHTML = `
+                            <div class="list-group-item text-muted text-center py-3">
+                                <i class="bi bi-search"></i> No se encontraron ventas
+                            </div>
+                        `;
+                        resultsDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error en búsqueda:', error);
+                }
+            }, 300);
+        });
+
+        function getEstadoColor(estado) {
+            const colores = {
+                'Pendiente': 'warning',
+                'Procesando': 'info',
+                'Completada': 'success',
+                'Cancelada': 'danger',
+                'Reembolsada': 'secondary'
+            };
+            return colores[estado] || 'secondary';
+        }
+
+        function seleccionarVenta(id) {
+            document.getElementById('searchResultsVentas').style.display = 'none';
+            document.querySelectorAll('#tablaVentas tbody tr').forEach(row => {
+                row.style.display = row.dataset.ventaId === id ? '' : 'none';
+            });
+        }
+
+        function limpiarBusquedaVentas() {
+            document.getElementById('searchVentas').value = '';
+            document.getElementById('searchResultsVentas').style.display = 'none';
+            mostrarTodasVentas();
+        }
+
+        function mostrarTodasVentas() {
+            document.querySelectorAll('#tablaVentas tbody tr').forEach(row => {
+                row.style.display = '';
+            });
+        }
+
+        // Filtros por estado
+        function filtrarPorEstado(estado) {
+            document.querySelectorAll('#tablaVentas tbody tr').forEach(row => {
+                const rowEstado = row.dataset.estado;
+                const mostrar = estado === 'todos' || rowEstado === estado;
+                row.style.display = mostrar ? '' : 'none';
+            });
+        }
+
+        // Completar venta
+        async function completarVenta(id, numeroVenta) {
+            if (!confirm(`¿Desea completar la venta ${numeroVenta}?\n\nEsta acción marcará la venta como finalizada.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/Ventas/${id}/completar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('? Venta completada exitosamente');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al completar la venta');
+            }
+        }
+
+        // Cancelar venta (solo Admin)
+        async function cancelarVenta(id, numeroVenta) {
+            const motivo = prompt(`¿Por qué desea cancelar la venta ${numeroVenta}?\n\nIngrese el motivo:`);
+            
+            if (!motivo || motivo.trim() === '') {
+                alert('Debe proporcionar un motivo para la cancelación');
+                return;
+            }
+            
+            if (!confirm(`Confirmar cancelación de la venta ${numeroVenta}?\n\nEsta acción restaurará el stock de los productos.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/Ventas/${id}/cancelar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ventaId: id,
+                        motivo: motivo.trim()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('? Venta cancelada exitosamente');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cancelar la venta');
+            }
+        }
+
+        // Cerrar autocomplete al hacer click fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#searchVentas') && !e.target.closest('#searchResultsVentas')) {
+                document.getElementById('searchResultsVentas').style.display = 'none';
+            }
+        });
+    </script>
+}

@@ -1,0 +1,762 @@
+@model IEnumerable<SciFiHub.Web.DTOs.Libro.LibroCardDTO>
+
+@{
+    ViewData["Title"] = "Gestión de Libros";
+}
+
+<style>
+    /* Number Picker Custom */
+    .number-picker {
+        display: flex;
+        align-items: center;
+        width: 140px;
+    }
+    .number-picker button {
+        width: 35px;
+        height: 35px;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        font-weight: bold;
+        transition: all 0.2s;
+    }
+    .number-picker button:hover {
+        background: #e9ecef;
+    }
+    .number-picker input {
+        width: 70px;
+        text-align: center;
+        border-left: none;
+        border-right: none;
+        height: 35px;
+    }
+    
+    /* Ocultar spinners nativos de input number */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+    
+    /* Estados con colores */
+    .badge-disponible { background-color: #28a745 !important; }
+    .badge-agotado { background-color: #dc3545 !important; }
+    .badge-descontinuado { background-color: #6c757d !important; }
+    
+    /* Stock badges */
+    .stock-excelente { background-color: #28a745 !important; }
+    .stock-bueno { background-color: #20c997 !important; }
+    .stock-bajo { background-color: #ffc107 !important; color: #000 !important; }
+    .stock-critico { background-color: #dc3545 !important; }
+    
+    /* Autocomplete mejorado */
+    #searchResults {
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    /* Animaciones */
+    .btn-action {
+        transition: transform 0.2s;
+    }
+    .btn-action:hover {
+        transform: scale(1.05);
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-book-half text-primary"></i> Gestión de Libros</h2>
+            <p class="text-muted">Control completo del inventario de la librería</p>
+        </div>
+    </div>
+
+    <!-- Barra de búsqueda y acciones -->
+    <div class="row mb-4">
+        <div class="col-md-9">
+            <div class="position-relative">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search text-primary"></i>
+                    </span>
+                    <input type="text" 
+                           id="searchInput" 
+                           class="form-control border-start-0" 
+                           placeholder="Buscar por título, autor, categoría...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="limpiarBusqueda()">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+                <div id="searchResults" 
+                     class="list-group position-absolute w-100 mt-1" 
+                     style="z-index: 1000; display: none;"></div>
+            </div>
+        </div>
+        <div class="col-md-3 text-end">
+            <button type="button" 
+                    class="btn btn-success btn-lg w-100" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalLibro">
+                <i class="bi bi-plus-circle me-2"></i>Agregar Libro
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros rápidos -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-primary" onclick="filtrarPorStock('todos')">
+                    Todos (@(Model?.Count() ?? 0))
+                </button>
+                <button type="button" class="btn btn-outline-success" onclick="filtrarPorStock('disponible')">
+                    <i class="bi bi-check-circle"></i> Disponibles
+                </button>
+                <button type="button" class="btn btn-outline-warning" onclick="filtrarPorStock('bajo')">
+                    <i class="bi bi-exclamation-triangle"></i> Stock Bajo
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="filtrarPorStock('critico')">
+                    <i class="bi bi-x-circle"></i> Sin Stock
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de inventario -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tablaInventario">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Título</th>
+                            <th>Autor</th>
+                            <th>Categoría</th>
+                            <th class="text-end">Precio</th>
+                            <th class="text-end">Oferta</th>
+                            <th class="text-center">Stock</th>
+                            <th class="text-center">Disponible</th>
+                            <th class="text-center pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var libro in Model)
+                            {
+                                var estadoClass = libro.Disponible ? "badge-disponible" : "badge-agotado";
+                                var stockClass = "stock-excelente";
+                                if (libro.Stock <= 0) stockClass = "stock-critico";
+                                else if (libro.Stock <= 5) stockClass = "stock-critico";
+                                else if (libro.Stock <= 10) stockClass = "stock-bajo";
+                                else if (libro.Stock <= 20) stockClass = "stock-bueno";
+                                
+                                <tr data-libro-id="@libro.Id" data-disponible="@libro.Disponible.ToString().ToLower()" data-stock="@libro.Stock">
+                                    <td class="ps-4">
+                                        <strong>@libro.Titulo</strong>
+                                        @if (libro.Destacado)
+                                        {
+                                            <span class="badge bg-warning text-dark ms-2">
+                                                <i class="bi bi-star-fill"></i> Destacado
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>@libro.Autor</td>
+                                    <td>
+                                        <span class="badge bg-info">@libro.CategoriaNombre</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>S/ @libro.Precio.ToString("N2")</strong>
+                                    </td>
+                                    <td class="text-end">
+                                        @if (libro.PrecioOferta.HasValue)
+                                        {
+                                            <span class="badge bg-success px-3 py-2">
+                                                S/ @libro.PrecioOferta.Value.ToString("N2")
+                                                @if (libro.PorcentajeDescuento.HasValue)
+                                                {
+                                                    <small class="ms-1">(-@libro.PorcentajeDescuento%)</small>
+                                                }
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @stockClass px-3 py-2 fw-bold">
+                                            @libro.Stock
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @estadoClass px-3 py-2">
+                                            @(libro.Disponible ? "Disponible" : "Agotado")
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-info btn-action" 
+                                                    onclick="verDetalleLibro('@libro.Id')"
+                                                    title="Ver detalle">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-warning btn-action" 
+                                                    onclick="editarLibro('@libro.Id')"
+                                                    title="Editar">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-danger btn-action" 
+                                                    onclick="eliminarLibro('@libro.Id', '@libro.Titulo')"
+                                                    title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox fs-1 d-block mb-3 text-secondary"></i>
+                                    <h5>No hay libros en el inventario</h5>
+                                    <p>Comienza agregando tu primer libro</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Agregar/Editar Libro -->
+<div class="modal fade" id="modalLibro" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2" id="iconoModal"></i>
+                    <span id="tituloModal">Agregar Nuevo Libro</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formLibro">
+                    <input type="hidden" id="libroId" name="Id">
+                    
+                    <!-- Información básica -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-info-circle me-2"></i>Información Básica</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">ISBN <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="ISBN" id="isbn" required>
+                            <div class="form-text">Código único del libro</div>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Título <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="Titulo" id="titulo" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Autor <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="Autor" id="autor" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Editorial</label>
+                            <input type="text" list="editorialesDatalist" class="form-control" name="Editorial" id="editorial">
+                            <datalist id="editorialesDatalist"></datalist>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Categoría <span class="text-danger">*</span></label>
+                            <select class="form-select" name="CategoriaId" id="categoriaId" required>
+                                <option value="">Seleccionar categoría...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Año Publicación</label>
+                            <div class="number-picker">
+                                <button type="button" class="btn" onclick="cambiarAnio(-1)">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <input type="number" class="form-control" name="AñoPublicacion" id="anioPublicacion" 
+                                       min="1800" max="@DateTime.Now.Year" value="@DateTime.Now.Year">
+                                <button type="button" class="btn" onclick="cambiarAnio(1)">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Páginas</label>
+                            <div class="number-picker">
+                                <button type="button" class="btn" onclick="cambiarPaginas(-10)">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <input type="number" class="form-control" name="Paginas" id="paginas" min="1" value="100">
+                                <button type="button" class="btn" onclick="cambiarPaginas(10)">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Precios e Inventario -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-cash-stack me-2"></i>Precios e Inventario</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Precio <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">S/</span>
+                                <input type="number" step="0.01" class="form-control" name="Precio" id="precio" required min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Precio Oferta</label>
+                            <div class="input-group">
+                                <span class="input-group-text">S/</span>
+                                <input type="number" step="0.01" class="form-control" name="PrecioOferta" id="precioOferta" min="0">
+                            </div>
+                            <div class="form-text" id="descuentoInfo"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Stock Inicial <span class="text-danger">*</span></label>
+                            <div class="number-picker">
+                                <button type="button" class="btn" onclick="cambiarStock(-1)">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <input type="number" class="form-control" name="Stock" id="stock" required min="0" value="0">
+                                <button type="button" class="btn" onclick="cambiarStock(1)">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Estado</label>
+                            <select class="form-select" name="Estado" id="estado">
+                                <option value="0">Disponible</option>
+                                <option value="1">Agotado</option>
+                                <option value="2">Descontinuado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-file-text me-2"></i>Descripción</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Sinopsis</label>
+                            <textarea class="form-control" name="Sinopsis" id="sinopsis" rows="3" 
+                                      placeholder="Breve descripción del libro..."></textarea>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Descripción Completa</label>
+                            <textarea class="form-control" name="Descripcion" id="descripcion" rows="4"
+                                      placeholder="Descripción detallada del libro..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Opciones adicionales -->
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="Destacado" id="destacado">
+                                <label class="form-check-label fw-bold" for="destacado">
+                                    <i class="bi bi-star text-warning me-1"></i>
+                                    Marcar como libro destacado
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="guardarLibro()">
+                    <i class="bi bi-save me-2"></i>Guardar Libro
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let categorias = [];
+
+        // Cargar categorías y editoriales al abrir el modal
+        document.getElementById('modalLibro').addEventListener('show.bs.modal', async function() {
+            console.log('?? Modal de libro abierto');
+            await cargarCategorias();
+            await cargarEditoriales();
+        });
+
+        // Cargar categorías
+        async function cargarCategorias() {
+            try {
+                console.log('?? Iniciando carga de categorías...');
+                
+                const response = await fetch('/api/Libros/categorias');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                console.log('?? Datos recibidos del servidor:', data);
+                
+                if (data.success && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                    const select = document.getElementById('categoriaId');
+                    
+                    if (!select) {
+                        console.error('? Select categoriaId no encontrado en el DOM');
+                        return;
+                    }
+                    
+                    // Limpiar opciones existentes
+                    select.innerHTML = '';
+                    
+                    // Agregar opción por defecto
+                    const optionDefault = document.createElement('option');
+                    optionDefault.value = '';
+                    optionDefault.textContent = 'Seleccionar categoría...';
+                    select.appendChild(optionDefault);
+                    
+                    // Agregar categorías
+                    data.data.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.id;
+                        option.textContent = cat.nombre;
+                        select.appendChild(option);
+                    });
+                    
+                    console.log(`? ${data.data.length} categorías cargadas exitosamente`);
+                } else {
+                    console.warn('?? No se encontraron categorías o respuesta inválida');
+                    const select = document.getElementById('categoriaId');
+                    if (select) {
+                        select.innerHTML = '<option value="">No hay categorías disponibles</option>';
+                    }
+                    
+                    alert('?? No hay categorías disponibles.\n\nPor favor, cree al menos una categoría antes de agregar libros.');
+                }
+            } catch (error) {
+                console.error('? Error al cargar categorías:', error);
+                alert('? Error al cargar categorías.\n\nVerifique:\n' +
+                      '1. Que existe el endpoint /api/Libros/categorias\n' +
+                      '2. Que hay categorías en la BD\n' +
+                      '3. La consola del navegador para más detalles.');
+            }
+        }
+
+        // Cargar editoriales
+        async function cargarEditoriales() {
+            try {
+                const response = await fetch('/api/Libros/editoriales');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const datalist = document.getElementById('editorialesDatalist');
+                    if (datalist) {
+                        datalist.innerHTML = '';
+                        data.data.forEach(ed => {
+                            datalist.innerHTML += `<option value="${ed}">`;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error al cargar editoriales:', error);
+            }
+        }
+
+        // Number pickers
+        function cambiarStock(delta) {
+            const input = document.getElementById('stock');
+            const valor = parseInt(input.value) || 0;
+            const nuevoValor = Math.max(0, valor + delta);
+            input.value = nuevoValor;
+        }
+
+        function cambiarAnio(delta) {
+            const input = document.getElementById('anioPublicacion');
+            const valor = parseInt(input.value) || new Date().getFullYear();
+            const nuevoValor = Math.max(1800, Math.min(new Date().getFullYear(), valor + delta));
+            input.value = nuevoValor;
+        }
+
+        function cambiarPaginas(delta) {
+            const input = document.getElementById('paginas');
+            const valor = parseInt(input.value) || 100;
+            const nuevoValor = Math.max(1, valor + delta);
+            input.value = nuevoValor;
+        }
+
+        // Calcular descuento
+        document.getElementById('precio')?.addEventListener('input', calcularDescuento);
+        document.getElementById('precioOferta')?.addEventListener('input', calcularDescuento);
+
+        function calcularDescuento() {
+            const precio = parseFloat(document.getElementById('precio').value) || 0;
+            const precioOferta = parseFloat(document.getElementById('precioOferta').value) || 0;
+            const infoDiv = document.getElementById('descuentoInfo');
+            
+            if (precioOferta > 0 && precioOferta < precio) {
+                const descuento = ((precio - precioOferta) / precio * 100).toFixed(0);
+                infoDiv.innerHTML = `<span class="text-success"><i class="bi bi-tag"></i> Descuento: ${descuento}%</span>`;
+            } else {
+                infoDiv.innerHTML = '';
+            }
+        }
+
+        // Búsqueda con autocompletado
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (query.length < 2) {
+                resultsDiv.style.display = 'none';
+                mostrarTodos();
+                return;
+            }
+            
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/Busqueda/libros?query=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    
+                    if (data.items && data.items.length > 0) {
+                        resultsDiv.innerHTML = data.items.map(libro => `
+                            <button type="button" class="list-group-item list-group-item-action" 
+                                    onclick="seleccionarLibro('${libro.id}')">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>${libro.titulo}</strong><br>
+                                        <small class="text-muted">${libro.autor} | ${libro.categoria}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge ${libro.disponible ? 'bg-success' : 'bg-danger'}">
+                                            ${libro.disponible ? 'Disponible' : 'Agotado'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </button>
+                        `).join('');
+                        resultsDiv.style.display = 'block';
+                    } else {
+                        resultsDiv.innerHTML = `
+                            <div class="list-group-item text-muted text-center py-3">
+                                <i class="bi bi-search"></i> No se encontraron resultados
+                            </div>
+                        `;
+                        resultsDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error en búsqueda:', error);
+                }
+            }, 300);
+        });
+
+        function seleccionarLibro(id) {
+            document.getElementById('searchResults').style.display = 'none';
+            document.querySelectorAll('#tablaInventario tbody tr').forEach(row => {
+                row.style.display = row.dataset.libroId === id ? '' : 'none';
+            });
+        }
+
+        function limpiarBusqueda() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').style.display = 'none';
+            mostrarTodos();
+        }
+
+        function mostrarTodos() {
+            document.querySelectorAll('#tablaInventario tbody tr').forEach(row => {
+                row.style.display = '';
+            });
+        }
+
+        // Filtros por disponibilidad
+        function filtrarPorStock(tipo) {
+            document.querySelectorAll('#tablaInventario tbody tr').forEach(row => {
+                const disponible = row.dataset.disponible === 'true';
+                let mostrar = false;
+                
+                switch(tipo) {
+                    case 'todos':
+                        mostrar = true;
+                        break;
+                    case 'disponible':
+                        mostrar = disponible;
+                        break;
+                    case 'critico':
+                        mostrar = !disponible;
+                        break;
+                }
+                
+                row.style.display = mostrar ? '' : 'none';
+            });
+        }
+
+        // Ver detalle
+        function verDetalleLibro(id) {
+            window.location.href = `/Catalogo/Detalle/${id}`;
+        }
+
+        // Editar libro
+        async function editarLibro(id) {
+            try {
+                const response = await fetch(`/api/Libros/${id}`);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    alert('Error al cargar el libro');
+                    return;
+                }
+                
+                const libro = data.data;
+                
+                // Cambiar título del modal
+                document.getElementById('tituloModal').textContent = 'Editar Libro';
+                document.getElementById('iconoModal').className = 'bi bi-pencil-square me-2';
+                
+                // Rellenar formulario
+                document.getElementById('libroId').value = libro.id;
+                document.getElementById('isbn').value = libro.isbn;
+                document.getElementById('titulo').value = libro.titulo;
+                document.getElementById('autor').value = libro.autor;
+                document.getElementById('editorial').value = libro.editorial || '';
+                document.getElementById('categoriaId').value = libro.categoriaId;
+                document.getElementById('anioPublicacion').value = libro.añoPublicacion || '';
+                document.getElementById('paginas').value = libro.paginas || '';
+                document.getElementById('precio').value = libro.precio;
+                document.getElementById('precioOferta').value = libro.precioOferta || '';
+                document.getElementById('stock').value = libro.stock;
+                document.getElementById('estado').value = libro.estado;
+                document.getElementById('sinopsis').value = libro.sinopsis || '';
+                document.getElementById('descripcion').value = libro.descripcion || '';
+                document.getElementById('destacado').checked = libro.destacado;
+                
+                calcularDescuento();
+                
+                // Mostrar modal
+                new bootstrap.Modal(document.getElementById('modalLibro')).show();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar el libro');
+            }
+        }
+
+        // Eliminar libro
+        async function eliminarLibro(id, titulo) {
+            if (!confirm(`¿Está seguro de eliminar el libro?\n\n"${titulo}"\n\nEsta acción no se puede deshacer.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/Libros/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('? Libro eliminado exitosamente');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al eliminar el libro');
+            }
+        }
+
+        // Guardar libro (crear o actualizar)
+        async function guardarLibro() {
+            const form = document.getElementById('formLibro');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            const formData = new FormData(form);
+            const libroId = document.getElementById('libroId').value;
+            const esEdicion = libroId !== '';
+            
+            const libro = {
+                isbn: formData.get('ISBN'),
+                titulo: formData.get('Titulo'),
+                autor: formData.get('Autor'),
+                editorial: formData.get('Editorial') || null,
+                categoriaId: formData.get('CategoriaId'),
+                añoPublicacion: parseInt(formData.get('AñoPublicacion')) || new Date().getFullYear(),
+                paginas: parseInt(formData.get('Paginas')) || 100,
+                idioma: 'Español',
+                precio: parseFloat(formData.get('Precio')),
+                precioOferta: parseFloat(formData.get('PrecioOferta')) || null,
+                stock: parseInt(formData.get('Stock')),
+                estado: parseInt(formData.get('Estado')),
+                sinopsis: formData.get('Sinopsis') || null,
+                descripcion: formData.get('Descripcion') || null,
+                destacado: formData.get('Destacado') === 'on'
+            };
+            
+            if (esEdicion) {
+                libro.id = libroId;
+            }
+            
+            try {
+                const url = esEdicion ? `/api/Libros/${libroId}` : '/api/Libros';
+                const method = esEdicion ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(libro)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`? Libro ${esEdicion ? 'actualizado' : 'creado'} exitosamente`);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al guardar el libro');
+            }
+        }
+
+        // Resetear modal al cerrar
+        document.getElementById('modalLibro').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('formLibro').reset();
+            document.getElementById('libroId').value = '';
+            document.getElementById('tituloModal').textContent = 'Agregar Nuevo Libro';
+            document.getElementById('iconoModal').className = 'bi bi-plus-circle me-2';
+            document.getElementById('descuentoInfo').innerHTML = '';
+        });
+
+        // Cargar categorías al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarCategorias();
+        });
+    </script>
+}

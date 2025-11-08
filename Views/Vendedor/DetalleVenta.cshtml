@@ -1,0 +1,261 @@
+@model SciFiHub.Web.DTOs.Venta.VentaDTO
+
+@{
+    ViewData["Title"] = "Boleta de Venta";
+}
+
+<div class="container-fluid py-4">
+    <div class="row mb-3 no-print">
+        <div class="col-md-12">
+            <a href="@Url.Action("Ventas", "Vendedor")" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Volver a Ventas
+            </a>
+            <a href="@Url.Action("DescargarPDF", "Ventas", new { id = Model.Id })" class="btn btn-danger float-end ms-2" target="_blank">
+                <i class="bi bi-file-pdf"></i> Descargar PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Contenedor con scroll -->
+    <div class="boleta-container">
+        <!-- BOLETA - Formato idéntico al PDF -->
+        <div class="card shadow-sm" id="boleta">
+            <div class="card-body p-4" style="max-width: 210mm; margin: 0 auto; background: white;">
+                
+                <!-- Encabezado Principal -->
+                <div class="row mb-4">
+                    <div class="col-7">
+                        <h3 class="mb-1 fw-bold" style="color: #1E3A8A;">SCIFIHUB</h3>
+                        <p class="mb-0 small">Av. Ramón Castilla 456</p>
+                        <p class="mb-0 small">Ayacucho - Huamanga - Ayacucho</p>
+                        <p class="mb-0 small">Región Ayacucho, Perú</p>
+                        <p class="mb-0 small">Teléf.: +51 966 123 456</p>
+                        <p class="mb-0 small">E-mail: ventas@scifihub.com</p>
+                    </div>
+                    <div class="col-5">
+                        <div class="border border-2 p-3 text-center" style="border-color: #1E3A8A !important;">
+                            <p class="mb-1 fw-semibold small">R.U.C.: 20601234567</p>
+                            <h5 class="mb-1 fw-bold">BOLETA DE VENTA</h5>
+                            <p class="mb-1 small">ELECTRÓNICA</p>
+                            <p class="mb-0 fw-semibold">@Model.NumeroVenta</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información del Cliente -->
+                <div class="bg-light p-3 mb-2">
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-1 small"><strong>Señor(es):</strong> @Model.ClienteNombre</p>
+                            <p class="mb-0 small"><strong>Documento Nº:</strong> @Model.ClienteId.ToString().Substring(0, 13)</p>
+                        </div>
+                        <div class="col-6 text-end">
+                            <p class="mb-1 small"><strong>Fecha de Emisión:</strong> @Model.FechaVenta.ToString("dd/MM/yyyy")</p>
+                            <p class="mb-0 small"><strong>Código cliente:</strong> @Model.ClienteId.ToString().Substring(0, 8)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dirección de Envío -->
+                <div class="bg-light p-2 mb-3">
+                    <p class="mb-0 small"><strong>Dirección de Envío:</strong> @(Model.DireccionEnvio?.Calle ?? "No especificada")</p>
+                </div>
+
+                <!-- Tabla de Items -->
+                <table class="table table-bordered table-sm mb-3" style="font-size: 0.85rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center" style="width: 50px;">ITEM</th>
+                            <th style="width: 100px;">Código</th>
+                            <th>DESCRIPCIÓN</th>
+                            <th class="text-center" style="width: 60px;">CANT.</th>
+                            <th class="text-end" style="width: 80px;">P. UNIT.</th>
+                            <th class="text-center" style="width: 60px;">DESC.</th>
+                            <th class="text-end" style="width: 80px;">SUBTOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Detalles != null && Model.Detalles.Any())
+                        {
+                            int item = 1;
+                            foreach (var detalle in Model.Detalles)
+                            {
+                                <tr>
+                                    <td class="text-center">@item</td>
+                                    <td style="font-size: 0.75rem;">@(detalle.LibroISBN ?? "N/A")</td>
+                                    <td>@detalle.LibroTitulo</td>
+                                    <td class="text-center">@detalle.Cantidad</td>
+                                    <td class="text-end">S/ @detalle.PrecioUnitario.ToString("N2")</td>
+                                    <td class="text-center">@detalle.Descuento.ToString("N2")</td>
+                                    <td class="text-end">S/ @detalle.Subtotal.ToString("N2")</td>
+                                </tr>
+                                item++;
+                            }
+                        }
+                        
+                        <!-- Filas vacías para completar hasta 10 -->
+                        @for (int i = 0; i < (10 - (Model.Detalles?.Count() ?? 0)); i++)
+                        {
+                            <tr>
+                                <td>&nbsp;</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- Totales y Monto en Letras -->
+                <div class="row mb-3">
+                    <div class="col-7">
+                        <p class="mb-0 small"><strong>Son:</strong> @ConvertirNumeroALetras(Model.Total) Y 00/100 SOLES</p>
+                    </div>
+                    <div class="col-5">
+                        <table class="table table-sm mb-0" style="font-size: 0.9rem;">
+                            <tr>
+                                <td class="text-end border-0"><strong>SUB. TOTAL:</strong></td>
+                                <td class="text-end border-0" style="width: 80px;">S/ @Model.Subtotal.ToString("N2")</td>
+                            </tr>
+                            <tr>
+                                <td class="text-end border-0"><strong>I.G.V (18%):</strong></td>
+                                <td class="text-end border-0">S/ @Model.IGV.ToString("N2")</td>
+                            </tr>
+                            <tr class="bg-light">
+                                <td class="text-end border-0"><strong>TOTAL:</strong></td>
+                                <td class="text-end border-0"><strong>S/ @Model.Total.ToString("N2")</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- QR y Observaciones -->
+                <div class="row mb-3">
+                    <div class="col-4">
+                        <div class="border text-center d-flex align-items-center justify-content-center" 
+                             style="width: 120px; height: 120px; margin: 0 auto;">
+                            <span class="text-muted small">QR CODE</span>
+                        </div>
+                    </div>
+                    <div class="col-8">
+                        <p class="mb-1 small"><strong>Observaciones:</strong></p>
+                        <p class="mb-0 small">Representación impresa de la Boleta Electrónica.</p>
+                        <p class="mb-0 small">Método de Pago: @Model.MetodoPago.ToString()</p>
+                        <p class="mb-0 small">Estado: @Model.EstadoVenta.ToString()</p>
+                        @if (!string.IsNullOrWhiteSpace(Model.NotasVenta))
+                        {
+                            <p class="mb-0 small"><strong>Notas:</strong> @Model.NotasVenta</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Pie de Boleta -->
+                <div class="text-center mt-4 pt-3 border-top">
+                    <p class="mb-0 small fst-italic">¡Gracias por su preferencia!</p>
+                    <p class="mb-0 small">SciFiHub - Tu tienda de ciencia ficción en Ayacucho</p>
+                    <p class="mb-0 small text-primary">www.scifihub.com</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string ConvertirNumeroALetras(decimal numero)
+    {
+        var parteEntera = (int)Math.Floor(numero);
+        
+        string[] unidades = { "", "UNO", "DOS", "TRES", "CUATRO", "CINCO", "SEIS", "SIETE", "OCHO", "NUEVE" };
+        string[] decenas = { "", "DIEZ", "VEINTE", "TREINTA", "CUARENTA", "CINCUENTA", "SESENTA", "SETENTA", "OCHENTA", "NOVENTA" };
+        string[] centenas = { "", "CIENTO", "DOSCIENTOS", "TRESCIENTOS", "CUATROCIENTOS", "QUINIENTOS", "SEISCIENTOS", "SETECIENTOS", "OCHOCIENTOS", "NOVECIENTOS" };
+        
+        if (parteEntera == 0) return "CERO";
+        if (parteEntera < 10) return unidades[parteEntera];
+        if (parteEntera < 100)
+        {
+            int dec = parteEntera / 10;
+            int uni = parteEntera % 10;
+            if (parteEntera >= 11 && parteEntera <= 15)
+            {
+                string[] especiales = { "ONCE", "DOCE", "TRECE", "CATORCE", "QUINCE" };
+                return especiales[parteEntera - 11];
+            }
+            if (parteEntera == 10) return "DIEZ";
+            if (parteEntera >= 16 && parteEntera <= 19) return "DIECI" + unidades[uni];
+            if (parteEntera >= 21 && parteEntera <= 29) return "VEINTI" + unidades[uni];
+            return decenas[dec] + (uni > 0 ? " Y " + unidades[uni] : "");
+        }
+        if (parteEntera < 1000)
+        {
+            int cen = parteEntera / 100;
+            int resto = parteEntera % 100;
+            if (parteEntera == 100) return "CIEN";
+            return centenas[cen] + (resto > 0 ? " " + ConvertirNumeroALetras(resto) : "");
+        }
+        
+        return parteEntera.ToString();
+    }
+}
+
+<style>
+    /* Contenedor con scroll y fondo visible */
+    .boleta-container {
+        max-height: 85vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        background-color: #f5f5f5;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    
+    /* Scrollbar personalizado */
+    .boleta-container::-webkit-scrollbar {
+        width: 10px;
+    }
+    
+    .boleta-container::-webkit-scrollbar-track {
+        background: #e0e0e0;
+        border-radius: 10px;
+    }
+    
+    .boleta-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+    
+    .boleta-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    
+    /* Boleta con sombra y borde sutil */
+    #boleta {
+        border: 1px solid #dee2e6 !important;
+        background: white !important;
+    }
+</style>
+
+<style media="print">
+    .no-print {
+        display: none !important;
+    }
+    
+    .boleta-container {
+        max-height: none !important;
+        overflow: visible !important;
+        background: white !important;
+        padding: 0 !important;
+    }
+    
+    body {
+        background: white !important;
+    }
+    
+    #boleta {
+        box-shadow: none !important;
+        border: none !important;
+    }
+</style>

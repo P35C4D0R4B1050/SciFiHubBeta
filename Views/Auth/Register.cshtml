@@ -1,0 +1,90 @@
+@model SciFiHub.Web.DTOs.Usuario.CrearUsuarioDTO
+
+@{
+    ViewData["Title"] = "Registrarse";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">
+                    <i class="bi bi-person-plus"></i> Crear Cuenta
+                </h2>
+                
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label asp-for="NombreCompleto" class="form-label">Nombre Completo</label>
+                            <input asp-for="NombreCompleto" class="form-control" placeholder="Juan Pérez" />
+                            <span asp-validation-for="NombreCompleto" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Username" class="form-label">Nombre de Usuario</label>
+                            <input asp-for="Username" class="form-control" placeholder="juanperez" />
+                            <span asp-validation-for="Username" class="text-danger small"></span>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Email" class="form-label">Email</label>
+                            <input asp-for="Email" type="email" class="form-control" placeholder="email@ejemplo.com" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Telefono" class="form-label">Teléfono (opcional)</label>
+                        <input asp-for="Telefono" class="form-control" placeholder="+1 234 567 8900" />
+                        <span asp-validation-for="Telefono" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Password" class="form-label">Contraseña</label>
+                            <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                            <small class="form-text text-muted">
+                                Mínimo 6 caracteres, debe incluir mayúscula, minúscula y número
+                            </small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ConfirmPassword" class="form-label">Confirmar Contraseña</label>
+                            <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="••••••••" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Al registrarte, aceptas nuestros términos y condiciones.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-person-plus"></i> Crear Cuenta
+                        </button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-0">¿Ya tienes cuenta?</p>
+                    <a asp-action="Login" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

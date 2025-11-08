@@ -1,0 +1,339 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SciFiHub</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    @await RenderSectionAsync("Styles", required: false)
+    @Html.AntiForgeryToken()
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                @if (User.Identity?.IsAuthenticated ?? false)
+                {
+                    @if (User.IsInRole("Vendedor"))
+                    {
+                        <a class="navbar-brand" asp-controller="Vendedor" asp-action="Inventario">
+                            <i class="bi bi-book-half"></i> SciFiHub
+                        </a>
+                    }
+                    else if (User.IsInRole("Administrador"))
+                    {
+                        <a class="navbar-brand" asp-controller="Admin" asp-action="Dashboard">
+                            <i class="bi bi-book-half"></i> SciFiHub
+                        </a>
+                    }
+                    else
+                    {
+                        <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                            <i class="bi bi-book-half"></i> SciFiHub
+                        </a>
+                    }
+                }
+                else
+                {
+                    <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-book-half"></i> SciFiHub
+                    </a>
+                }
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" 
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        @* Inicio - Solo para Clientes o No autenticados *@
+                        @if (!(User.Identity?.IsAuthenticated ?? false) || User.IsInRole("Cliente"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Home" asp-action="Index">Inicio</a>
+                            </li>
+                        }
+                        
+                        @* SOLO para Clientes o No autenticados - Ver Catálogo Público *@
+                        @if (!(User.Identity?.IsAuthenticated ?? false) || User.IsInRole("Cliente"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Catalogo" asp-action="Index">Catálogo</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Catalogo" asp-action="Ofertas">Ofertas</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Catalogo" asp-action="Novedades">Novedades</a>
+                            </li>
+                        }
+                        
+                        @* VENDEDOR - Accesos directos *@
+                        @if (User.IsInRole("Vendedor"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Vendedor" asp-action="Inventario">
+                                    <i class="bi bi-box-seam"></i> Libros
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Vendedor" asp-action="Ventas">
+                                    <i class="bi bi-receipt"></i> Ventas
+                                </a>
+                            </li>
+                        }
+                        
+                        @* ADMINISTRADOR - Accesos directos *@
+                        @if (User.IsInRole("Administrador"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Dashboard">
+                                    <i class="bi bi-speedometer2"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Inventario">
+                                    <i class="bi bi-box-seam"></i> Libros
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Ventas">
+                                    <i class="bi bi-receipt"></i> Ventas
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="Usuarios">
+                                    <i class="bi bi-people"></i> Usuarios
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                    
+                    <!-- Búsqueda rápida - Solo para clientes -->
+                    @if (!(User.Identity?.IsAuthenticated ?? false) || User.IsInRole("Cliente"))
+                    {
+                        <form class="d-flex me-3" asp-controller="Catalogo" asp-action="Buscar" method="get">
+                            <input class="form-control form-control-sm me-2" type="search" name="q" 
+                                   placeholder="Buscar libros..." aria-label="Search">
+                            <button class="btn btn-outline-light btn-sm" type="submit">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </form>
+                    }
+                    
+                    <!-- Usuario y carrito -->
+                    <ul class="navbar-nav">
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <!-- Carrito (solo para clientes) -->
+                            @if (User.IsInRole("Cliente"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link position-relative" asp-controller="Carrito" asp-action="Index">
+                                        <i class="bi bi-cart3"></i> Carrito
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" 
+                                              id="carrito-contador" style="display: none;">
+                                            0
+                                        </span>
+                                    </a>
+                                </li>
+                            }
+                            
+                            <!-- Menú de usuario -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle"></i> @User.Identity.Name
+                                    @if (User.IsInRole("Administrador"))
+                                    {
+                                        <span class="badge bg-danger ms-1">Admin</span>
+                                    }
+                                    @if (User.IsInRole("Vendedor"))
+                                    {
+                                        <span class="badge bg-primary ms-1">Vendedor</span>
+                                    }
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                    @if (User.IsInRole("Administrador"))
+                                    {
+                                        <li class="dropdown-header">Panel de Administrador</li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Admin" asp-action="Dashboard">
+                                                <i class="bi bi-speedometer2 text-danger"></i> Dashboard
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Admin" asp-action="Inventario">
+                                                <i class="bi bi-box-seam text-primary"></i> Gestión de Libros
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Admin" asp-action="Ventas">
+                                                <i class="bi bi-receipt text-success"></i> Gestión de Ventas
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Admin" asp-action="Usuarios">
+                                                <i class="bi bi-people text-warning"></i> Gestión de Usuarios
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+                                    @if (User.IsInRole("Vendedor"))
+                                    {
+                                        <li class="dropdown-header">Panel de Vendedor</li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Vendedor" asp-action="Inventario">
+                                                <i class="bi bi-box-seam text-primary"></i> Inventario
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Vendedor" asp-action="Ventas">
+                                                <i class="bi bi-receipt text-success"></i> Ventas
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Vendedor" asp-action="CrearVenta">
+                                                <i class="bi bi-plus-circle text-success"></i> Nueva Venta
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+                                    @if (User.IsInRole("Cliente"))
+                                    {
+                                        <li class="dropdown-header">Mi Cuenta</li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Cliente" asp-action="MisCompras">
+                                                <i class="bi bi-bag-check text-success"></i> Mis Compras
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Carrito" asp-action="Index">
+                                                <i class="bi bi-cart text-info"></i> Mi Carrito
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    }
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Auth" asp-action="Profile">
+                                            <i class="bi bi-person"></i> Mi Perfil
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Auth" asp-action="ChangePassword">
+                                            <i class="bi bi-key"></i> Cambiar Contraseña
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Auth" asp-action="Logout" method="post" class="d-inline">
+                                            <button type="submit" class="dropdown-item text-danger">
+                                                <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Auth" asp-action="Login">
+                                    <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Auth" asp-action="Register">
+                                    <i class="bi bi-person-plus"></i> Registrarse
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <div class="container">
+        <!-- Mensajes de notificación -->
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle-fill"></i> @TempData["InfoMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["WarningMessage"] != null)
+        {
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-circle-fill"></i> @TempData["WarningMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            <div class="row py-4">
+                <div class="col-md-4">
+                    <h5><i class="bi bi-book-half"></i> SciFiHub</h5>
+                    <p>Tu librería especializada en ciencia ficción y fantasía.</p>
+                </div>
+                <div class="col-md-4">
+                    <h5>Enlaces</h5>
+                    <ul class="list-unstyled">
+                        <li><a asp-controller="Home" asp-action="About">Acerca de</a></li>
+                        <li><a asp-controller="Home" asp-action="Contact">Contacto</a></li>
+                        <li><a asp-controller="Home" asp-action="Privacy">Privacidad</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Síguenos</h5>
+                    <div>
+                        <a href="#" class="text-dark me-2"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="text-dark me-2"><i class="bi bi-twitter"></i></a>
+                        <a href="#" class="text-dark me-2"><i class="bi bi-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center pb-3">
+                &copy; 2025 - SciFiHub - <a asp-controller="Home" asp-action="Privacy">Privacy</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    @* Script del carrito solo para clientes *@
+    @if (User.Identity?.IsAuthenticated ?? false)
+    {
+        @if (User.IsInRole("Cliente"))
+        {
+            <script src="~/js/carrito-cliente.js" asp-append-version="true"></script>
+        }
+    }
+    
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

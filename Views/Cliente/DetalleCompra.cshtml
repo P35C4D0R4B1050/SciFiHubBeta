@@ -1,0 +1,140 @@
+@model SciFiHub.Web.DTOs.Venta.VentaDTO
+@{
+    ViewData["Title"] = "Detalle de Compra";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-receipt"></i> Detalle de Compra</h2>
+        <a href="@Url.Action("MisCompras")" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a Mis Compras
+        </a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Información de la Compra</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Número de Compra:</strong> @Model.NumeroVenta</p>
+                    <p><strong>Fecha:</strong> @Model.FechaVenta.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><strong>Estado:</strong>
+                        @switch (Model.EstadoVenta)
+                        {
+                            case SciFiHub.Domain.Enums.EstadoVenta.Pendiente:
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                                break;
+                            case SciFiHub.Domain.Enums.EstadoVenta.Completada:
+                                <span class="badge bg-success">Completada</span>
+                                break;
+                            case SciFiHub.Domain.Enums.EstadoVenta.Cancelada:
+                                <span class="badge bg-danger">Cancelada</span>
+                                break;
+                            default:
+                                <span class="badge bg-secondary">@Model.EstadoVenta</span>
+                                break;
+                        }
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Método de Pago:</strong> @Model.MetodoPago</p>
+                    @if (Model.DireccionEnvio != null)
+                    {
+                        <p><strong>Dirección de Envío:</strong> 
+                           @Model.DireccionEnvio.Calle, @Model.DireccionEnvio.Ciudad, @Model.DireccionEnvio.Departamento, @Model.DireccionEnvio.Pais
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Items Comprados</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Libro</th>
+                            <th>Autor</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unit.</th>
+                            <th>Descuento</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var detalle in Model.Detalles)
+                        {
+                            <tr>
+                                <td>@detalle.LibroTitulo</td>
+                                <td>@detalle.LibroAutor</td>
+                                <td>@detalle.Cantidad</td>
+                                <td>S/ @detalle.PrecioUnitario.ToString("N2")</td>
+                                <td>S/ @detalle.Descuento.ToString("N2")</td>
+                                <td><strong>S/ @detalle.Subtotal.ToString("N2")</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="5" class="text-end">Subtotal:</th>
+                            <th>S/ @Model.Subtotal.ToString("N2")</th>
+                        </tr>
+                        <tr>
+                            <th colspan="5" class="text-end">Descuento:</th>
+                            <th>S/ @Model.Descuento.ToString("N2")</th>
+                        </tr>
+                        <tr>
+                            <th colspan="5" class="text-end">IGV (18%):</th>
+                            <th>S/ @Model.IGV.ToString("N2")</th>
+                        </tr>
+                        <tr class="table-primary">
+                            <th colspan="5" class="text-end">TOTAL:</th>
+                            <th>S/ @Model.Total.ToString("N2")</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.NotasVenta))
+    {
+        <div class="alert alert-info">
+            <strong>Notas:</strong> @Model.NotasVenta
+        </div>
+    }
+
+    <!-- Sección de Boleta PDF -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Boleta de Venta</h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">Descarga tu boleta de venta en formato PDF</h6>
+                    <p class="text-muted mb-0">
+                        <small>
+                            <i class="bi bi-info-circle"></i> La boleta contiene todos los detalles de tu compra y puede ser utilizada como comprobante.
+                        </small>
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="@Url.Action("DescargarPDF", "Cliente", new { id = Model.Id })" 
+                       class="btn btn-success btn-lg" 
+                       target="_blank"
+                       title="Ver/Descargar Boleta en PDF">
+                        <i class="bi bi-file-earmark-pdf"></i> Ver/Descargar Boleta (PDF)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,73 @@
+@model SciFiHub.Web.DTOs.Usuario.LoginDTO
+
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-sm mt-5">
+            <div class="card-header bg-primary text-white text-center">
+                <h3><i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión</h3>
+            </div>
+            <div class="card-body p-4">
+                
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                <form method="post" asp-action="Login" asp-controller="Auth">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="UsernameOrEmail" class="form-label">
+                            <i class="bi bi-person"></i> Usuario o Email
+                        </label>
+                        <input asp-for="UsernameOrEmail" class="form-control" placeholder="Ingresa tu usuario o email" autofocus />
+                        <span asp-validation-for="UsernameOrEmail" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">
+                            <i class="bi bi-lock"></i> Contraseña
+                        </label>
+                        <input asp-for="Password" class="form-control" placeholder="Ingresa tu contraseña" type="password" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
+                        <label asp-for="RememberMe" class="form-check-label">Recordarme</label>
+                    </div>
+
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                        </button>
+                    </div>
+
+                    <div class="text-center">
+                        <p class="mb-2">¿No tienes una cuenta? <a asp-action="Register" class="text-decoration-none">Regístrate aquí</a></p>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

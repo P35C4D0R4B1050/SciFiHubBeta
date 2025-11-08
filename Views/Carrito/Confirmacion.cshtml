@@ -1,0 +1,139 @@
+@model Guid
+
+@{
+    ViewData["Title"] = "Compra Confirmada";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="text-center py-5">
+            <!-- Icono de éxito -->
+            <div class="mb-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size: 6rem;"></i>
+            </div>
+
+            <!-- Mensaje de confirmación -->
+            <h1 class="text-success mb-3">¡Compra Realizada Exitosamente!</h1>
+            <p class="lead mb-4">Tu pedido ha sido procesado correctamente.</p>
+
+            <!-- Información del pedido -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="bi bi-info-circle"></i> Detalles de tu Pedido
+                    </h5>
+                    <p class="mb-2">
+                        <strong>ID de Pedido:</strong> 
+                        <code>@Model</code>
+                    </p>
+                    <p class="text-muted">
+                        Recibirás un email de confirmación con los detalles de tu compra.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Próximos pasos -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> ¿Qué sigue?</h5>
+                </div>
+                <div class="card-body text-start">
+                    <ol class="mb-0">
+                        <li class="mb-2">
+                            <strong>Confirmación:</strong> Recibirás un email con los detalles de tu pedido.
+                        </li>
+                        <li class="mb-2">
+                            <strong>Preparación:</strong> Prepararemos tu pedido en 24-48 horas.
+                        </li>
+                        <li class="mb-2">
+                            <strong>Envío:</strong> Tu pedido será enviado a la dirección indicada.
+                        </li>
+                        <li class="mb-2">
+                            <strong>Entrega:</strong> Recibirás tu pedido en 3-5 días hábiles.
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Información de contacto -->
+            <div class="alert alert-light">
+                <i class="bi bi-envelope"></i>
+                ¿Tienes preguntas? Contáctanos a: <strong>soporte@scifihub.com</strong>
+            </div>
+
+            <!-- Acciones -->
+            <div class="d-grid gap-2 d-md-block">
+                <a asp-controller="Cliente" asp-action="MisCompras" class="btn btn-primary btn-lg">
+                    <i class="bi bi-bag-check"></i> Ver Mis Compras
+                </a>
+                <a asp-controller="Catalogo" asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-book"></i> Seguir Comprando
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de recomendaciones -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h3 class="text-center mb-4">Te puede interesar...</h3>
+        <div class="row row-cols-1 row-cols-md-4 g-4">
+            <!-- Aquí se pueden mostrar libros recomendados -->
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-book text-primary" style="font-size: 3rem;"></i>
+                        <h6 class="mt-3">Explorar más</h6>
+                        <a asp-controller="Catalogo" asp-action="Novedades" class="btn btn-sm btn-outline-primary">
+                            Ver Novedades
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-star text-warning" style="font-size: 3rem;"></i>
+                        <h6 class="mt-3">Libros Destacados</h6>
+                        <a asp-controller="Catalogo" asp-action="Destacados" class="btn btn-sm btn-outline-warning">
+                            Ver Destacados
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-tag text-danger" style="font-size: 3rem;"></i>
+                        <h6 class="mt-3">Ofertas Especiales</h6>
+                        <a asp-controller="Catalogo" asp-action="Ofertas" class="btn btn-sm btn-outline-danger">
+                            Ver Ofertas
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-grid-3x3-gap text-info" style="font-size: 3rem;"></i>
+                        <h6 class="mt-3">Por Categorías</h6>
+                        <a asp-controller="Catalogo" asp-action="Index" class="btn btn-sm btn-outline-info">
+                            Ver Catálogo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Animación de confetti (opcional)
+        $(document).ready(function() {
+            // Mostrar mensaje de éxito
+            showToast('¡Gracias por tu compra!', 'success');
+        });
+    </script>
+}

@@ -1,0 +1,49 @@
+@model IEnumerable<SciFiHub.Web.DTOs.Libro.LibroCardDTO>
+
+@{
+    ViewData["Title"] = "Libros Destacados";
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="jumbotron bg-warning bg-opacity-10 p-4 rounded">
+            <h1 class="display-5">
+                <i class="bi bi-star-fill text-warning"></i> Libros Destacados
+            </h1>
+            <p class="lead">Nuestra selección especial de los mejores libros</p>
+        </div>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <div class="row mb-3">
+        <div class="col-12">
+            <p class="text-muted">Mostrando @Model.Count() libro(s) destacado(s)</p>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+        @foreach (var libro in Model)
+        {
+            <div class="col">
+                <partial name="_LibroCard" model="libro" />
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle fs-1"></i>
+                <h4 class="mt-3">No hay libros destacados disponibles</h4>
+                <p>Revisa nuestro catálogo completo para descubrir grandes historias.</p>
+                <a asp-controller="Catalogo" asp-action="Index" class="btn btn-primary mt-3">
+                    <i class="bi bi-book"></i> Ver Catálogo Completo
+                </a>
+            </div>
+        </div>
+    </div>
+}

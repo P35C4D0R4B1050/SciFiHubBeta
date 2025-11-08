@@ -1,0 +1,175 @@
+@{
+    ViewData["Title"] = "Nueva Venta";
+}
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-cart-plus"></i> Registrar Nueva Venta</h2>
+            <p class="text-muted">Complete la información para registrar la venta</p>
+        </div>
+    </div>
+
+    <form id="formNuevaVenta">
+        <div class="row">
+            <!-- Columna izquierda: Información del cliente -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-person"></i> Información del Cliente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Cliente *</label>
+                            <div class="input-group">
+                                <input type="text" id="buscarCliente" class="form-control" placeholder="Buscar por nombre, DNI o email...">
+                                <button type="button" class="btn btn-success" 
+                                        data-bs-toggle="modal" data-bs-target="#modalRegistroRapido"
+                                        title="Registrar nuevo cliente">
+                                    <i class="bi bi-person-plus"></i> Nuevo Cliente
+                                </button>
+                            </div>
+                            <input type="hidden" id="clienteId" name="ClienteId">
+                            <div id="resultadosClientes" class="list-group mt-1" style="position: absolute, z-index: 1000, display: none;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Método de Pago *</label>
+                            <select class="form-select" name="MetodoPago" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="TarjetaCredito">Tarjeta de Crédito</option>
+                                <option value="TarjetaDebito">Tarjeta de Débito</option>
+                                <option value="Yape">Yape</option>
+                                <option value="Plin">Plin</option>
+                                <option value="Transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Dirección de Envío *</label>
+                            <textarea class="form-control" name="DireccionEnvio" rows="3" required></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna derecha: Items de la venta -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-box-seam"></i> Items de la Venta</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Buscar Libro</label>
+                            <input type="text" id="buscarLibro" class="form-control" placeholder="Buscar por título, autor o ISBN...">
+                            <div id="resultadosLibros" class="list-group mt-1" style="position: absolute, z-index: 1000, display: none;"></div>
+                        </div>
+                        
+                        <!-- Tabla de items agregados -->
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="tablaItems">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Libro</th>
+                                        <th>Cant.</th>
+                                        <th>Precio</th>
+                                        <th>Subtotal</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Los items se agregarán dinámicamente -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-light">
+                                        <td colspan="3" class="text-end"><strong>TOTAL:</strong></td>
+                                        <td colspan="2"><strong>S/ <span id="totalVenta">0.00</span></strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="row">
+            <div class="col-md-12 text-end">
+                <a href="@Url.Action("Ventas", "Vendedor")" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Registrar Venta
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Modal de Registro Rápido de Cliente -->
+<div class="modal fade" id="modalRegistroRapido" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus me-2"></i>
+                    Registro Rápido de Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formRegistroRapido">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Nombre Completo <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" name="NombreCompleto" 
+                               id="nombreCompletoRapido" required
+                               placeholder="Ej: Juan Pérez García">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            Email <span class="text-danger">*</span>
+                        </label>
+                        <input type="email" class="form-control" name="Email" 
+                               id="emailRapido" required
+                               placeholder="Ej: juan.perez@ejemplo.com">
+                        <div class="form-text">
+                            Se usará para generar el usuario automáticamente
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Teléfono</label>
+                        <input type="tel" class="form-control" name="Telefono" 
+                               id="telefonoRapido"
+                               placeholder="Ej: 999888777">
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Nota:</strong> Se generará automáticamente:
+                        <ul class="mb-0 mt-2">
+                            <li>Usuario: Se creará desde el email</li>
+                            <li>Contraseña temporal: Se generará aleatoriamente</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="guardarClienteRapido()">
+                    <i class="bi bi-save me-2"></i>Registrar Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/crear-venta.js"></script>
+}

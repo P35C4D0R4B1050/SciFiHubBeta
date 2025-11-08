@@ -1,0 +1,298 @@
+@{
+    ViewData["Title"] = "Dashboard Administrativo";
+    var estadisticas = ViewBag.Estadisticas as SciFiHub.Web.Services.Interfaces.EstadisticasVentasDTO;
+    var stockBajo = ViewBag.StockBajo as IEnumerable<SciFiHub.Web.DTOs.Libro.LibroDTO> ?? Enumerable.Empty<SciFiHub.Web.DTOs.Libro.LibroDTO>();
+    var masVendidos = ViewBag.MasVendidos as IEnumerable<SciFiHub.Web.Services.Interfaces.LibroMasVendidoDTO> ?? Enumerable.Empty<SciFiHub.Web.Services.Interfaces.LibroMasVendidoDTO>();
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-speedometer2"></i> Dashboard Administrativo</h2>
+        <p class="text-muted">Resumen y estadísticas del sistema</p>
+        <hr>
+    </div>
+</div>
+
+<!-- Cards de estadísticas principales -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Ventas del Mes</h6>
+                        <h2 class="mb-0">S/. @(estadisticas?.TotalVentas.ToString("N2") ?? "0.00")</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-cash-coin" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-primary bg-opacity-75">
+                <small><i class="bi bi-graph-up"></i> @(estadisticas?.CantidadVentas ?? 0) transacciones</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Promedio por Venta</h6>
+                        <h2 class="mb-0">S/. @(estadisticas?.PromedioVenta.ToString("N2") ?? "0.00")</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-calculator" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-success bg-opacity-75">
+                <small><i class="bi bi-arrow-up-circle"></i> Ticket promedio</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Total Ventas</h6>
+                        <h2 class="mb-0">@(estadisticas?.CantidadVentas ?? 0)</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-receipt" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-info bg-opacity-75">
+                <small><i class="bi bi-calendar-month"></i> Este mes</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">Stock Bajo</h6>
+                        <h2 class="mb-0">@stockBajo.Count()</h2>
+                    </div>
+                    <div>
+                        <i class="bi bi-exclamation-triangle" style="font-size: 3rem; opacity: 0.5;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-warning bg-opacity-75">
+                <small><i class="bi bi-box-seam"></i> Requiere atención</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accesos rápidos -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning-fill"></i> Accesos Rápidos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="Inventario" class="btn btn-outline-primary btn-lg w-100 py-3">
+                            <i class="bi bi-book d-block mb-2" style="font-size: 2rem;"></i>
+                            Gestionar Libros
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button type="button" class="btn btn-outline-success btn-lg w-100 py-3" 
+                                data-bs-toggle="modal" data-bs-target="#modalNuevoLibro">
+                            <i class="bi bi-plus-circle d-block mb-2" style="font-size: 2rem;"></i>
+                            Nuevo Libro
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="Usuarios" class="btn btn-outline-info btn-lg w-100 py-3">
+                            <i class="bi bi-people d-block mb-2" style="font-size: 2rem;"></i>
+                            Gestionar Usuarios
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Catalogo" asp-action="Index" class="btn btn-outline-secondary btn-lg w-100 py-3">
+                            <i class="bi bi-eye d-block mb-2" style="font-size: 2rem;"></i>
+                            Ver Catálogo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Libros más vendidos -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-trophy"></i> Top 5 Libros Más Vendidos</h5>
+            </div>
+            <div class="card-body">
+                @if (masVendidos.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var libro in masVendidos)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">@libro.Titulo</h6>
+                                    <small class="text-muted">@libro.Autor</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">@libro.CantidadVendida vendidos</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No hay datos de ventas disponibles
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock bajo -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Libros con Stock Bajo</h5>
+            </div>
+            <div class="card-body">
+                @if (stockBajo.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var libro in stockBajo)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">@libro.Titulo</h6>
+                                    <small class="text-muted">ISBN: @libro.ISBN</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-warning text-dark">Stock: @libro.Stock</span>
+                                    <a asp-action="EditarLibro" asp-route-id="@libro.Id" class="btn btn-sm btn-outline-primary ms-2">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> Todos los libros tienen stock suficiente
+                    </div>
+                }
+            </div>
+            @if (stockBajo.Any())
+            {
+                <div class="card-footer">
+                    <a asp-action="Libros" class="btn btn-warning w-100">
+                        <i class="bi bi-box-seam"></i> Ver todos los libros
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de ventas (placeholder) -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-bar-chart-line"></i> Ventas del Mes</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ventasChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/inventario-admin.js"></script>
+    <script>
+        // Obtener datos de ventas reales del mes
+        fetch('/api/Ventas/estadisticas-mes')
+            .then(response => response.json())
+            .then(data => {
+                const ctx = document.getElementById('ventasChart');
+                
+                // Preparar datos por semanas
+                const ventasPorSemana = calcularVentasPorSemana(data);
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
+                        datasets: [{
+                            label: 'Ventas (S/.)',
+                            data: ventasPorSemana,
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Total: S/. ' + context.parsed.y.toFixed(2);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'S/. ' + value.toFixed(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error al cargar estadísticas:', error);
+            });
+
+        function calcularVentasPorSemana(data) {
+            // Agrupar ventas por semana del mes
+            const semanas = [0, 0, 0, 0];
+            if (data && data.length) {
+                data.forEach(venta => {
+                    const fecha = new Date(venta.fecha);
+                    const dia = fecha.getDate();
+                    const semana = Math.floor((dia - 1) / 7);
+                    if (semana >= 0 && semana < 4) {
+                        semanas[semana] += venta.total;
+                    }
+                });
+            }
+            return semanas;
+        }
+    </script>
+}

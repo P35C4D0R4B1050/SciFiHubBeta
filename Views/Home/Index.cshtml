@@ -1,0 +1,130 @@
+﻿@{
+    ViewData["Title"] = "Inicio";
+    var destacados = ViewBag.Destacados as IEnumerable<SciFiHub.Web.DTOs.Libro.LibroCardDTO> ?? Enumerable.Empty<SciFiHub.Web.DTOs.Libro.LibroCardDTO>();
+    var novedades = ViewBag.Novedades as IEnumerable<SciFiHub.Web.DTOs.Libro.LibroCardDTO> ?? Enumerable.Empty<SciFiHub.Web.DTOs.Libro.LibroCardDTO>();
+    var ofertas = ViewBag.Ofertas as IEnumerable<SciFiHub.Web.DTOs.Libro.LibroCardDTO> ?? Enumerable.Empty<SciFiHub.Web.DTOs.Libro.LibroCardDTO>();
+    var categorias = ViewBag.Categorias as IEnumerable<SciFiHub.Web.DTOs.Categoria.CategoriaDTO> ?? Enumerable.Empty<SciFiHub.Web.DTOs.Categoria.CategoriaDTO>();
+}
+
+<!-- Hero Section -->
+<div class="jumbotron bg-light p-5 rounded-3 mb-5">
+    <div class="container-fluid py-5 text-center">
+        <h1 class="display-4 fw-bold"><i class="bi bi-book-half"></i> Bienvenido a SciFiHub</h1>
+        <p class="fs-4">Tu librería especializada en ciencia ficción y fantasía</p>
+        <p class="lead">Descubre mundos increíbles, personajes inolvidables y aventuras épicas.</p>
+        <hr class="my-4">
+        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+            <a class="btn btn-primary btn-lg" asp-controller="Catalogo" asp-action="Index" role="button">
+                <i class="bi bi-book"></i> Explorar Catálogo
+            </a>
+            <a class="btn btn-success btn-lg" asp-controller="Catalogo" asp-action="Ofertas" role="button">
+                <i class="bi bi-tag-fill"></i> Ver Ofertas
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Categorías Principales -->
+@if (categorias.Any())
+{
+    <section class="mb-5">
+        <h2 class="mb-4"><i class="bi bi-grid-3x3-gap"></i> Categorías Populares</h2>
+        <div class="row g-3">
+            @foreach (var categoria in categorias.Take(6))
+            {
+                <div class="col-md-4 col-lg-2">
+                    <a asp-controller="Catalogo" asp-action="Categoria" asp-route-id="@categoria.Id" 
+                       class="card h-100 text-decoration-none hover-shadow">
+                        <div class="card-body text-center">
+                            <i class="bi bi-folder2-open text-primary" style="font-size: 2rem;"></i>
+                            <h6 class="card-title mt-2 mb-0">@categoria.Nombre</h6>
+                            <small class="text-muted">@categoria.CantidadLibros libros</small>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- Ofertas -->
+@if (ofertas.Any())
+{
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-tag-fill text-danger"></i> Ofertas Especiales</h2>
+            <a asp-controller="Catalogo" asp-action="Ofertas" class="btn btn-outline-primary">
+                Ver todas <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+            @foreach (var libro in ofertas.Take(4))
+            {
+                <div class="col">
+                    <partial name="_LibroCard" model="libro" />
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- Libros Destacados -->
+@if (destacados.Any())
+{
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-star-fill text-warning"></i> Libros Destacados</h2>
+            <a asp-controller="Catalogo" asp-action="Destacados" class="btn btn-outline-primary">
+                Ver todos <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+            @foreach (var libro in destacados.Take(8))
+            {
+                <div class="col">
+                    <partial name="_LibroCard" model="libro" />
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- Novedades -->
+@if (novedades.Any())
+{
+    <section class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-lightning-fill text-primary"></i> Últimas Novedades</h2>
+            <a asp-controller="Catalogo" asp-action="Novedades" class="btn btn-outline-primary">
+                Ver todas <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+        <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+            @foreach (var libro in novedades.Take(8))
+            {
+                <div class="col">
+                    <partial name="_LibroCard" model="libro" />
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- CTA Section -->
+<div class="bg-primary text-white p-5 rounded-3 text-center">
+    <h2 class="mb-3">¿No encuentras lo que buscas?</h2>
+    <p class="lead mb-4">Tenemos miles de títulos disponibles. Explora nuestro catálogo completo.</p>
+    <a class="btn btn-light btn-lg" asp-controller="Catalogo" asp-action="Index">
+        <i class="bi bi-search"></i> Buscar en el Catálogo
+    </a>
+</div>
+
+<style>
+    .hover-shadow {
+        transition: all 0.3s ease;
+    }
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+</style>
