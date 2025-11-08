@@ -1,0 +1,11 @@
+E:\Proyecto\SciFiHub\SciFiHub.Domain\bin\Debug\net10.0\SciFiHub.Domain.deps.json
+E:\Proyecto\SciFiHub\SciFiHub.Domain\bin\Debug\net10.0\SciFiHub.Domain.dll
+E:\Proyecto\SciFiHub\SciFiHub.Domain\bin\Debug\net10.0\SciFiHub.Domain.pdb
+E:\Proyecto\SciFiHub\SciFiHub.Domain\obj\Debug\net10.0\SciFiHub.Domain.GeneratedMSBuildEditorConfig.editorconfig
+E:\Proyecto\SciFiHub\SciFiHub.Domain\obj\Debug\net10.0\SciFiHub.Domain.AssemblyInfoInputs.cache
+E:\Proyecto\SciFiHub\SciFiHub.Domain\obj\Debug\net10.0\SciFiHub.Domain.AssemblyInfo.cs
+E:\Proyecto\SciFiHub\SciFiHub.Domain\obj\Debug\net10.0\SciFiHub.Domain.csproj.CoreCompileInputs.cache
+E:\Proyecto\SciFiHub\SciFiHub.Domain\obj\Debug\net10.0\SciFiHub.Domain.dll
+E:\Proyecto\SciFiHub\SciFiHub.Domain\obj\Debug\net10.0\refint\SciFiHub.Domain.dll
+E:\Proyecto\SciFiHub\SciFiHub.Domain\obj\Debug\net10.0\SciFiHub.Domain.pdb
+E:\Proyecto\SciFiHub\SciFiHub.Domain\obj\Debug\net10.0\ref\SciFiHub.Domain.dll
